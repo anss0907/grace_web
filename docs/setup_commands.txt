@@ -1,0 +1,68 @@
+========================================================
+  GRACE Website — Milestone 0 Setup Commands
+========================================================
+
+----- LAPTOP SETUP (Ubuntu 22.04, one-time) -----
+
+# 1. Install nvm (manages Node.js versions)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+# 2. Load nvm in current terminal (or just close & reopen terminal)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# 3. Install Node.js v20 (comes with npm + npx)
+nvm install 20
+
+# 4. Verify everything installed
+node --version     # should say v20.20.0
+npm --version      # should say 10.8.2
+
+# 5. Create the Next.js project inside your ROS workspace
+cd ~/grace_ws/src
+npx -y create-next-app@latest ./grace_web --typescript --app --no-tailwind --eslint --no-src-dir --import-alias "@/*" --yes --disable-git
+
+# 6. Add COLCON_IGNORE so colcon build skips this folder
+touch ~/grace_ws/src/grace_web/COLCON_IGNORE
+
+# 7. Start the dev server (test it works)
+cd ~/grace_ws/src/grace_web
+npm run dev
+# Open browser → http://localhost:3000
+# Press Ctrl+C to stop
+
+
+----- JETSON SETUP (JetPack 6, do this later) -----
+
+# 1. Install rosbridge (lets website talk to ROS topics)
+sudo apt update
+sudo apt install ros-humble-rosbridge-suite
+
+# 2. Install foxglove_bridge (lets Foxglove Studio see ROS data)
+sudo apt install ros-humble-foxglove-bridge
+
+# 3. Launch both bridges (run in separate terminals)
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml port:=9090
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
+
+# 4. (Optional) Install Node.js on Jetson if you want Jetson to host the website
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+# reopen terminal, then:
+nvm install 20
+
+
+----- DAILY WORKFLOW -----
+
+# Start working on the website:
+cd ~/grace_ws/src/grace_web
+npm run dev
+
+# Build for production (when done developing):
+npm run build
+npm start
+
+# Install a new package (when we add libraries later):
+npm install <package-name>
+
+# Check for code errors:
+npm run lint

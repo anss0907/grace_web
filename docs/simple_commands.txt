@@ -1,0 +1,30 @@
+# GRACE Website — Simple Commands Cheat Sheet
+# Run these in your terminal from the project folder:
+# cd ~/grace_ws/src/grace_web
+
+# 1. RUN THE WEBSITE (Development)
+# This is what you use 99% of the time. Hot-reload enabled.
+npm run dev
+
+# 2. BUILD FOR PRODUCTION (Final Version)
+# Run this before deploying or showing it off.
+# It makes the site super fast.
+npm run build
+npm start
+
+# 3. CHECK FOR ERRORS
+# Run this to see if you broke any rules or types.
+npm run lint
+
+# 4. INSTALL NEW PACKAGES
+# If you need a new library (like a chart or icon pack):
+npm install <package-name>
+# Example: npm install lucide-react
+
+# 5. UPDATE DEPENDENCIES
+# If your packages are getting old:
+npm update
+
+# to install three js
+cd ~/grace_ws/src/grace_web
+npm install three @types/three @react-three/fiber @react-three/drei
