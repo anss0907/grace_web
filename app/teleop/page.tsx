@@ -5,6 +5,17 @@ import { useROS } from "../lib/useROS";
 import * as ROSLIB from "roslib";
 import MapCanvas from "../components/MapCanvas";
 
+function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth <= 768);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+    return isMobile;
+}
+
 // Joystick constants
 const PAD_SIZE = 220;
 const KNOB_SIZE = 70;
@@ -14,6 +25,7 @@ const PUBLISH_RATE = 10;  // Hz
 
 export default function TeleopPage() {
     const { ros, status } = useROS();
+    const isMobile = useIsMobile();
 
     // Joystick state
     const [joyX, setJoyX] = useState(0); // -1 to 1 (left/right → angular)
@@ -181,15 +193,17 @@ export default function TeleopPage() {
                 </span>
             </div>
 
-            {/* Split layout: Map | Controls */}
-            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+            {/* Split layout: Map | Controls (stacks on mobile) */}
+            <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
 
                 {/* LEFT: Live map */}
                 <div style={{
-                    flex: "1 1 60%",
-                    borderRight: "1px solid rgba(155, 89, 182, 0.12)",
+                    flex: isMobile ? "0 0 45vh" : "1 1 60%",
+                    borderRight: isMobile ? "none" : "1px solid rgba(155, 89, 182, 0.12)",
+                    borderBottom: isMobile ? "1px solid rgba(155, 89, 182, 0.12)" : "none",
                     position: "relative",
                     minWidth: 0,
+                    minHeight: isMobile ? "250px" : 0,
                 }}>
                     <MapCanvas
                         ros={ros}
@@ -214,12 +228,13 @@ export default function TeleopPage() {
 
                 {/* RIGHT: Joystick + data panels */}
                 <div style={{
-                    flex: "0 0 340px",
+                    flex: isMobile ? "1 1 auto" : "0 0 340px",
                     display: "flex", flexDirection: "column",
-                    padding: "16px",
-                    gap: "14px",
+                    padding: isMobile ? "12px" : "16px",
+                    gap: isMobile ? "10px" : "14px",
                     overflowY: "auto",
                     background: "rgba(15, 10, 25, 0.6)",
+                    alignItems: isMobile ? "center" : "stretch",
                 }}>
 
                     {/* Joystick */}

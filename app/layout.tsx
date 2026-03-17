@@ -1,7 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import ScrollToTop from "./components/ScrollToTop";
+import MobileNav from "./components/MobileNav";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "GRACE — Digital Nurse Robot",
@@ -28,6 +34,8 @@ export default function RootLayout({
               <div className="navbar-subtitle">Digital Nurse</div>
             </div>
           </Link>
+
+          {/* Desktop nav links */}
           <ul className="navbar-links">
             <li>
               <Link href="/">Home</Link>
@@ -54,6 +62,9 @@ export default function RootLayout({
               <Link href="/viz">Visualization</Link>
             </li>
           </ul>
+
+          {/* Mobile nav (hamburger + drawer) */}
+          <MobileNav />
         </nav>
 
         {/* ========== MAIN CONTENT ========== */}

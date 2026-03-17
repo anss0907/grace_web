@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, Suspense } from "react";
+import { useRef, useEffect, useState, Suspense, createContext, useContext } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -30,25 +30,21 @@ const FULLBODY_SECTIONS = [
         title: "Meet GRACE",
         subtitle: "Your Digital Nurse Companion",
         text: "GRACE (Geriatric Robotic Assistance for Care and Engagement) is a mobile companion robot designed for elderly care — intelligent monitoring, interaction, and emotional support.",
-        robotSide: "right" as const,
     },
     {
         title: "Designed with Empathy",
         subtitle: "Friendly & Approachable",
         text: "Every curve, every proportion was designed to feel welcoming. GRACE's friendly face and soft silhouette reduce anxiety in elderly users who may struggle with technology.",
-        robotSide: "left" as const,
     },
     {
         title: "Built to Navigate",
         subtitle: "Autonomous & Aware",
         text: "RPLidar A2M7 for 360° scanning, 3 IMU sensors fused via EKF, and differential drive with hoverboard motors. GRACE moves through spaces safely and intelligently.",
-        robotSide: "left" as const,
     },
     {
         title: "Powered by ROS 2",
         subtitle: "Jetson Orin + Nav2",
         text: "Running ROS 2 Humble on NVIDIA Jetson Orin Nano, GRACE leverages Nav2 for autonomous navigation, SLAM for mapping, and real-time health monitoring.",
-        robotSide: "right" as const,
     },
 ];
 
@@ -60,30 +56,26 @@ const BASE_SECTIONS = [
         title: "The Hardware Platform",
         subtitle: "Currently Built & In Development",
         text: "This is GRACE's actual hardware base — designed in SolidWorks, manufactured, and assembled. The circular aluminum chassis houses the entire drive system, electronics, and battery packs.",
-        robotSide: "right" as const,
     },
     {
         title: "Differential Drive System",
         subtitle: "Repurposed Hoverboard Motors",
         text: "Two high-torque BLDC motors salvaged from hoverboards provide smooth differential drive. Combined with 4 passive casters for omnidirectional stability on hospital floors.",
-        robotSide: "left" as const,
     },
     {
         title: "Triple IMU Fusion",
         subtitle: "3 Sensors · 1 EKF",
         text: "Three BNO055 IMU sensors — main, front, and back — fused through an Extended Kalman Filter for precise localization. This eliminates wheel slip errors and gives reliable pose estimation.",
-        robotSide: "left" as const,
     },
     {
         title: "Active Development",
         subtitle: "Work in Progress",
         text: "The base platform is fully operational with autonomous navigation. We're actively working on the upper body integration, face display system, and health monitoring peripherals.",
-        robotSide: "right" as const,
     },
 ];
 
 // ============================================================
-// GLB Part (loaded from converted GLB files)
+// GLB Part
 // ============================================================
 function GLBPart({ file, position, rotation, color }: {
     file: string;
@@ -102,9 +94,9 @@ function GLBPart({ file, position, rotation, color }: {
 }
 
 // ============================================================
-// Full-body 3D model — floating animation + scroll-driven
+// MOBILE Full-body 3D model — CENTERED, rotate + move down
 // ============================================================
-function FullBodyModel({ scrollProgress }: { scrollProgress: number }) {
+function MobileFullBodyModel({ scrollProgress }: { scrollProgress: number }) {
     const groupRef = useRef<THREE.Group>(null);
     const { scene } = useGLTF("/models/grace-full-body.glb");
     const geometry = (scene.children[0] as THREE.Mesh)?.geometry;
@@ -128,23 +120,22 @@ function FullBodyModel({ scrollProgress }: { scrollProgress: number }) {
         if (!groupRef.current) return;
         floatTime.current += delta;
 
-        const floatY = Math.sin(floatTime.current * 1.2) * 0.08;
-        const floatZ = Math.cos(floatTime.current * 0.8) * 0.03;
+        const floatBob = Math.sin(floatTime.current * 1.2) * 0.06;
 
-        // 2 full rotations (4 * PI) minus offset so she faces more forward initially
-        const targetRotY = scrollProgress * Math.PI * 4 - (Math.PI * 0.8);
+        // Rotate: 1 full spin over the scroll
+        const targetRotY = scrollProgress * Math.PI * 2;
 
-        // Original horizontal speed
-        const targetX = Math.cos(scrollProgress * Math.PI * 2) * 1.8;
+        // Move downward: descend less to stay centered
+        const targetY = -(scrollProgress * 1.5) + floatBob;
 
-        groupRef.current.rotation.y += (targetRotY - groupRef.current.rotation.y) * 0.04;
-        groupRef.current.position.x += (targetX - groupRef.current.position.x) * 0.04;
-        groupRef.current.position.y = floatY;
-        groupRef.current.position.z = floatZ;
+        // Stay centered (no X movement)
+        groupRef.current.rotation.y += (targetRotY - groupRef.current.rotation.y) * 0.05;
+        groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.05;
+        groupRef.current.position.x = 0; // Always centered
     });
 
     return (
-        <group ref={groupRef} position={[1.8, 0, 0]}>
+        <group ref={groupRef} position={[0, 0, 0]}>
             <mesh geometry={geometry}>
                 <meshPhongMaterial color="#2a1a3e" specular="#9B59B6" shininess={40} transparent opacity={0.85} />
             </mesh>
@@ -153,10 +144,9 @@ function FullBodyModel({ scrollProgress }: { scrollProgress: number }) {
 }
 
 // ============================================================
-// URDF Base model — floating + scroll-driven
-// Z-up correction inside, Y rotation outside (correct axis)
+// MOBILE URDF Base model — CENTERED, rotate + move down
 // ============================================================
-function URDFBaseModel({ scrollProgress }: { scrollProgress: number }) {
+function MobileURDFBaseModel({ scrollProgress }: { scrollProgress: number }) {
     const groupRef = useRef<THREE.Group>(null);
     const floatTime = useRef(0);
 
@@ -164,23 +154,21 @@ function URDFBaseModel({ scrollProgress }: { scrollProgress: number }) {
         if (!groupRef.current) return;
         floatTime.current += delta;
 
-        const floatY = Math.sin(floatTime.current * 1.2) * 0.06;
+        const floatBob = Math.sin(floatTime.current * 1.2) * 0.04;
 
-        // 2 full rotations (4 * PI) minus offset so base faces forward initially
-        const targetRotY = scrollProgress * Math.PI * 4 - (Math.PI * 0.8);
+        // Rotate: 1 full spin
+        const targetRotY = scrollProgress * Math.PI * 2;
 
-        // Original horizontal speed
-        const targetX = Math.cos(scrollProgress * Math.PI * 2) * 1.5;
+        // Move downward: descend less to stay centered
+        const targetY = -(scrollProgress * 1.0) + floatBob;
 
-        groupRef.current.rotation.y += (targetRotY - groupRef.current.rotation.y) * 0.04;
-        groupRef.current.position.x += (targetX - groupRef.current.position.x) * 0.04;
-        groupRef.current.position.y = floatY;
+        groupRef.current.rotation.y += (targetRotY - groupRef.current.rotation.y) * 0.05;
+        groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.05;
+        groupRef.current.position.x = 0; // Always centered
     });
 
     return (
-        // Outer: Y rotation (global Y axis)
-        <group ref={groupRef} position={[1.5, 0, 0]}>
-            {/* Inner: Z-up → Y-up correction */}
+        <group ref={groupRef} position={[0, 0, 0]}>
             <group rotation={[-Math.PI / 2, 0, 0]} scale={[5, 5, 5]}>
                 {URDF_PARTS.map((part) => (
                     <GLBPart
@@ -208,14 +196,39 @@ function AdaptivePerformance() {
 }
 
 // ============================================================
-// Reusable scroll storytelling section (DESKTOP ONLY)
+// Scroll context
 // ============================================================
-function ScrollStorySection({
+const ScrollProgressContext = createContext(0);
+
+function ScrollProgressInjector({ scrollProgress, children }: { scrollProgress: number; children: React.ReactNode }) {
+    return (
+        <ScrollProgressContext.Provider value={scrollProgress}>
+            {children}
+        </ScrollProgressContext.Provider>
+    );
+}
+
+function MobileFullBodyModelWrapper() {
+    const sp = useContext(ScrollProgressContext);
+    return <MobileFullBodyModel scrollProgress={sp} />;
+}
+
+function MobileURDFBaseModelWrapper() {
+    const sp = useContext(ScrollProgressContext);
+    return <MobileURDFBaseModel scrollProgress={sp} />;
+}
+
+// ============================================================
+// Mobile scroll storytelling section
+// Model: top 45% (sticky), centered, rotates + moves down
+// Text: bottom area, closer together (70vh per card)
+// ============================================================
+function MobileScrollStorySection({
     sections,
     children,
     glowColor,
 }: {
-    sections: typeof FULLBODY_SECTIONS;
+    sections: { title: string; subtitle: string; text: string }[];
     children: React.ReactNode;
     glowColor: string;
 }) {
@@ -249,10 +262,9 @@ function ScrollStorySection({
 
     if (hasError) return null;
 
-    // ── DESKTOP / LAPTOP: sticky 3D scroll story ──
     return (
         <div ref={sectionRef} style={{ position: "relative" }}>
-            {/* Sticky 3D Canvas */}
+            {/* Sticky 3D Canvas — top portion */}
             <div
                 style={{
                     position: "sticky",
@@ -263,81 +275,77 @@ function ScrollStorySection({
                     pointerEvents: "none",
                 }}
             >
-                <Canvas
-                    camera={{ position: [3.5, 1.5, 3.5], fov: 30 }}
-                    gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
-                    dpr={[1, 1.5]}
-                    style={{ background: "transparent" }}
-                    onCreated={({ gl }) => {
-                        gl.domElement.addEventListener("webglcontextlost", (e) => {
-                            e.preventDefault();
-                            setHasError(true);
-                        });
-                    }}
-                >
-                    <AdaptivePerformance />
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[5, 8, 5]} intensity={1} color="#F3E5F5" />
-                    <directionalLight position={[-3, 4, -2]} intensity={0.4} color="#E91E63" />
-                    <pointLight position={[0, 3, 0]} intensity={0.4} color="#9B59B6" />
-
-                    <Suspense fallback={null}>
-                        <ScrollProgressInjector scrollProgress={scrollProgress}>
-                            {children}
-                        </ScrollProgressInjector>
-                    </Suspense>
-                </Canvas>
-
-                {/* Glow */}
-                <div
-                    style={{
+                <div style={{ height: "100vh", position: "relative" }}>
+                    <Canvas
+                        camera={{ position: [3.5, 1.5, 3.5], fov: 40 }}
+                        gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
+                        dpr={[1, 1.5]}
+                        style={{ background: "transparent" }}
+                        onCreated={({ gl }) => {
+                            gl.domElement.addEventListener("webglcontextlost", (e) => {
+                                e.preventDefault();
+                                setHasError(true);
+                            });
+                        }}
+                    >
+                        <AdaptivePerformance />
+                        <ambientLight intensity={0.5} />
+                        <directionalLight position={[5, 8, 5]} intensity={1} color="#F3E5F5" />
+                        <directionalLight position={[-3, 4, -2]} intensity={0.4} color="#E91E63" />
+                        <pointLight position={[0, 3, 0]} intensity={0.4} color="#9B59B6" />
+                        <Suspense fallback={null}>
+                            <ScrollProgressInjector scrollProgress={scrollProgress}>
+                                {children}
+                            </ScrollProgressInjector>
+                        </Suspense>
+                    </Canvas>
+                    {/* Glow */}
+                    <div style={{
                         position: "absolute",
                         top: "50%",
                         left: "50%",
                         transform: "translate(-50%, -50%)",
-                        width: "400px",
-                        height: "400px",
+                        width: "200px",
+                        height: "200px",
                         borderRadius: "50%",
                         background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
                         animation: "pulseGlow 3s ease-in-out infinite",
                         pointerEvents: "none",
                         zIndex: -1,
-                    }}
-                />
+                    }} />
+                </div>
             </div>
 
-            {/* Text sections */}
+            {/* Text sections — closer together (70vh instead of 100vh) */}
             <div
                 style={{
                     position: "relative",
                     zIndex: 1,
                     marginTop: "-100vh",
+                    paddingTop: "40vh",
                     pointerEvents: "none",
                 }}
             >
                 {sections.map((section, i) => {
-                    const isRight = section.robotSide === "right";
                     const isActive = activeIndex === i;
-
                     return (
                         <div
                             key={i}
                             style={{
-                                minHeight: "100vh",
+                                minHeight: "45vh",
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: isRight
-                                    ? "flex-start"
-                                    : "flex-end",
-                                padding: "2rem 5%",
+                                alignItems: "flex-end",
+                                justifyContent: "center",
+                                padding: "1.5rem 1rem 3rem",
                             }}
                         >
                             <div
                                 style={{
-                                    maxWidth: "420px",
-                                    padding: "2rem 2.5rem",
+                                    maxWidth: "95%",
+                                    width: "100%",
+                                    padding: "1.25rem",
                                     borderRadius: "20px",
-                                    background: "rgba(13, 6, 24, 0.85)",
+                                    background: "rgba(13, 6, 24, 0.92)",
                                     backdropFilter: "blur(16px)",
                                     border: `1px solid rgba(155, 89, 182, ${isActive ? "0.3" : "0.1"})`,
                                     opacity: isActive ? 1 : 0.3,
@@ -349,31 +357,31 @@ function ScrollStorySection({
                                 <span
                                     style={{
                                         display: "inline-block",
-                                        fontSize: "0.7rem",
+                                        fontSize: "0.6rem",
                                         fontWeight: 700,
                                         letterSpacing: "3px",
                                         textTransform: "uppercase",
                                         color: "#E91E63",
-                                        marginBottom: "0.6rem",
+                                        marginBottom: "0.5rem",
                                     }}
                                 >
                                     {section.subtitle}
                                 </span>
                                 <h2
                                     style={{
-                                        fontSize: "2rem",
+                                        fontSize: "1.3rem",
                                         fontWeight: 800,
                                         color: "#F3E5F5",
                                         lineHeight: 1.15,
-                                        marginBottom: "1rem",
+                                        marginBottom: "0.6rem",
                                     }}
                                 >
                                     {section.title}
                                 </h2>
                                 <p
                                     style={{
-                                        fontSize: "0.95rem",
-                                        lineHeight: 1.7,
+                                        fontSize: "0.8rem",
+                                        lineHeight: 1.65,
                                         color: "#B39DDB",
                                         margin: 0,
                                     }}
@@ -387,62 +395,33 @@ function ScrollStorySection({
             </div>
 
             <style>{`
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-        }
-      `}</style>
+                @keyframes pulseGlow {
+                  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+                  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+                }
+            `}</style>
         </div>
     );
 }
 
-// Helper to pass scrollProgress to 3D model children via context
-import { createContext, useContext } from "react";
-
-const ScrollProgressContext = createContext(0);
-
-function ScrollProgressInjector({ scrollProgress, children }: { scrollProgress: number; children: React.ReactNode }) {
-    return (
-        <ScrollProgressContext.Provider value={scrollProgress}>
-            {children}
-        </ScrollProgressContext.Provider>
-    );
-}
-
-// Wrapper models that read from context
-function FullBodyModelWrapper() {
-    const sp = useContext(ScrollProgressContext);
-    return <FullBodyModel scrollProgress={sp} />;
-}
-
-function URDFBaseModelWrapper() {
-    const sp = useContext(ScrollProgressContext);
-    return <URDFBaseModel scrollProgress={sp} />;
-}
-
 // ============================================================
-// EXPORTED: Full-body scroll story
+// EXPORTED: Mobile Full-body scroll story
 // ============================================================
-export function FullBodyScrollStory() {
+export function MobileFullBodyScrollStory() {
     return (
-        <ScrollStorySection sections={FULLBODY_SECTIONS} glowColor="rgba(155,89,182,0.12)">
-            <FullBodyModelWrapper />
-        </ScrollStorySection>
+        <MobileScrollStorySection sections={FULLBODY_SECTIONS} glowColor="rgba(155,89,182,0.12)">
+            <MobileFullBodyModelWrapper />
+        </MobileScrollStorySection>
     );
 }
 
 // ============================================================
-// EXPORTED: URDF base scroll story
+// EXPORTED: Mobile URDF base scroll story
 // ============================================================
-export function URDFBaseScrollStory() {
+export function MobileURDFBaseScrollStory() {
     return (
-        <ScrollStorySection sections={BASE_SECTIONS} glowColor="rgba(233,30,99,0.10)">
-            <URDFBaseModelWrapper />
-        </ScrollStorySection>
+        <MobileScrollStorySection sections={BASE_SECTIONS} glowColor="rgba(233,30,99,0.10)">
+            <MobileURDFBaseModelWrapper />
+        </MobileScrollStorySection>
     );
-}
-
-// Default export = full body story
-export default function HomeScrollViewer() {
-    return <FullBodyScrollStory />;
 }

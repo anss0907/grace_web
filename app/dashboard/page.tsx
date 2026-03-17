@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useROS } from "../lib/useROS";
 import * as ROSLIB from "roslib";
 
+
 /* ── Constants ──────────────────────────────────── */
 const MAX_GAUGE_VALUE = 180; // RPM — motor speed range is -180 to 180
 const GAUGE_SIZE = 200;
@@ -129,7 +130,7 @@ export default function DashboardPage() {
                 <div style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: "20px",
+                    gap: "min(20px, 3vw)",
                     marginBottom: "2rem",
                 }}>
                     <GaugeChart
@@ -155,7 +156,7 @@ export default function DashboardPage() {
                 <div style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: "20px",
+                    gap: "min(20px, 3vw)",
                     marginBottom: "2rem",
                 }}>
                     <GaugeChart

@@ -1,17 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import RobotViewer3D from "./components/RobotViewerWrapper";
-import { URDFBaseScrollStory } from "./components/RobotViewerWrapper";
-import ScrollReveal from "./components/ScrollReveal";
-import HomePageSwitch from "./components/HomePageSwitch";
+import { MobileFullBodyScrollStory, MobileURDFBaseScrollStory } from "./MobileRobotViewerWrapper";
+import ScrollReveal from "./ScrollReveal";
 
-export default function Home() {
-  return (
-    <HomePageSwitch desktopChildren={<DesktopHome />} />
-  );
-}
-
-function DesktopHome() {
+export default function MobileHome() {
   return (
     <>
       {/* ========== HERO ========== */}
@@ -42,10 +36,10 @@ function DesktopHome() {
       </section>
 
       {/* ========== SCROLL-DRIVEN 3D: FULL BODY ========== */}
-      <RobotViewer3D />
+      <MobileFullBodyScrollStory />
 
       {/* ========== SCROLL-DRIVEN 3D: HARDWARE BASE ========== */}
-      <URDFBaseScrollStory />
+      <MobileURDFBaseScrollStory />
 
       {/* ========== GRACE CHARACTER + LOGO ========== */}
       <ScrollReveal>
