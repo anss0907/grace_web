@@ -47,3 +47,5 @@ relay/agent/.env
 relay/server/.env
 relay/agent/node_modules/
 relay/server/node_modules/
+
+relay/agent/agent.log
