@@ -19,8 +19,6 @@ const presets = require("./presets");
 
 /* ── Load .env manually (no dotenv dependency) ────── */
 const fs = require("fs");
-<<<<<<< HEAD
-=======
 
 /* ── Command audit log ────────────────────────────── */
 const LOG_FILE = path.join(__dirname, "agent.log");
@@ -29,7 +27,6 @@ function logCommand(action, details) {
     const entry = `[${timestamp}] ${action} | ${details}\n`;
     fs.appendFileSync(LOG_FILE, entry);
 }
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
 const envPath = path.join(__dirname, ".env");
 if (fs.existsSync(envPath)) {
     fs.readFileSync(envPath, "utf-8").split("\n").forEach((line) => {
@@ -197,10 +194,7 @@ function createTerminal(id, label) {
     });
 
     console.log(`🖥️  Terminal created: "${label}" (${id})`);
-<<<<<<< HEAD
-=======
     logCommand("TERMINAL_CREATED", `id=${id} label="${label}"`);
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
 
     send({
         type: "terminal_created",
@@ -232,10 +226,7 @@ function runPreset(id, presetName) {
         term.command = presetName;
         term.pty.write(preset.command + "\n");
         console.log(`▶️  Running preset "${presetName}" in terminal ${id}`);
-<<<<<<< HEAD
-=======
         logCommand("PRESET_RUN", `preset="${presetName}" command="${preset.command}" id=${id}`);
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
     }
 }
 
@@ -265,10 +256,7 @@ function killTerminal(id) {
         return;
     }
     console.log(`🔪 Killing terminal "${term.label}" (${id})`);
-<<<<<<< HEAD
-=======
     logCommand("TERMINAL_KILLED", `id=${id} label="${term.label}"`);
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
     term.pty.kill();
     terminals.delete(id);
     send({
@@ -344,10 +332,7 @@ function send(obj) {
 /* ── Graceful Shutdown ────────────────────────────── */
 function shutdown() {
     console.log("\n🛑 Shutting down agent...");
-<<<<<<< HEAD
-=======
     logCommand("AGENT_SHUTDOWN", "Agent stopped");
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
 
     // Kill all terminals
     terminals.forEach((term, id) => {
@@ -373,12 +358,8 @@ console.log("╠═════════════════════�
 console.log(`║  Host:   ${os.hostname().padEnd(27)}║`);
 console.log(`║  Node:   ${process.version.padEnd(27)}║`);
 console.log(`║  Relay:  ${RELAY_URL.slice(0, 27).padEnd(27)}║`);
-<<<<<<< HEAD
-console.log("╚══════════════════════════════════════╝");
-=======
 console.log(`║  Log:    ${LOG_FILE.slice(0, 27).padEnd(27)}║`);
 console.log("╚══════════════════════════════════════╝");
 logCommand("AGENT_STARTED", `host=${os.hostname()} relay=${RELAY_URL}`);
->>>>>>> 5626d53 (feat(remote): implement secure websocket relay and xterm.js terminal control with command auditing)
 
 connect();
