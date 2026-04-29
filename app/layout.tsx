@@ -59,6 +59,9 @@ export default function RootLayout({
               <Link href="/dashboard">Dashboard</Link>
             </li>
             <li>
+              <Link href="/terminal">Terminal</Link>
+            </li>
+            <li>
               <Link href="/viz">Visualization</Link>
             </li>
           </ul>
@@ -105,6 +108,9 @@ export default function RootLayout({
                 </li>
                 <li>
                   <Link href="/dashboard">Dashboard</Link>
+                </li>
+                <li>
+                  <Link href="/terminal">Terminal</Link>
                 </li>
                 <li>
                   <Link href="/viz">Visualization</Link>

@@ -1,0 +1,13 @@
+{
+  "name": "grace-agent",
+  "version": "1.0.0",
+  "description": "Local agent for GRACE robot — runs on Ubuntu laptop, connects to relay",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "node-pty": "^1.0.0"
+  }
+}

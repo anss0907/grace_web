@@ -12,6 +12,7 @@ const NAV_LINKS = [
     { href: "/teleop", label: "Teleop" },
     { href: "/map", label: "Map" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/terminal", label: "Terminal" },
     { href: "/viz", label: "Visualization" },
 ];
 
