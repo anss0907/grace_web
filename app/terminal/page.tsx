@@ -83,24 +83,74 @@ export default function TerminalPage() {
     const presetList = Object.keys(relay.presets).length > 0 ? relay.presets : defaultPresets;
 
     return (
-        <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", paddingTop: "70px" }}>
+        <main style={{
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            paddingTop: "70px",
+            overflow: "hidden",
+        }}>
+            {/* ── Inline styles for animations ── */}
+            <style>{`
+                @keyframes pulse-glow {
+                    0%, 100% { box-shadow: 0 0 8px currentColor; }
+                    50% { box-shadow: 0 0 16px currentColor, 0 0 24px currentColor; }
+                }
+                @keyframes terminal-blink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                }
+                .preset-btn:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.2);
+                }
+                .preset-btn:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+                .tab-item:hover {
+                    background: rgba(155, 89, 182, 0.08) !important;
+                }
+                .close-btn:hover {
+                    color: #ff1744 !important;
+                    opacity: 0.9 !important;
+                }
+                .terminal-area {
+                    position: relative;
+                    background: #0a0a0a;
+                }
+                .terminal-area::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 0; right: 0;
+                    height: 40px;
+                    background: linear-gradient(to bottom, rgba(155, 89, 182, 0.03), transparent);
+                    pointer-events: none;
+                    z-index: 1;
+                }
+            `}</style>
 
             {/* ── Top Bar: Agent Status ── */}
             <div style={{
-                padding: "12px 20px",
+                padding: "10px 20px",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "rgba(15, 10, 25, 0.95)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.15)",
-                flexWrap: "wrap", gap: "10px",
+                background: "rgba(15, 10, 25, 0.98)",
+                borderBottom: "1px solid rgba(155, 89, 182, 0.12)",
+                backdropFilter: "blur(12px)",
+                flexWrap: "wrap", gap: "8px",
+                flexShrink: 0,
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <h1 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600 }}>
-                        <span className="gradient-text">Terminal</span>
+                    <h1 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, letterSpacing: "0.02em" }}>
+                        <span style={{ marginRight: "6px", fontSize: "0.9rem" }}>⌨️</span>
+                        <span className="gradient-text">Remote Terminal</span>
                     </h1>
                     <AgentBadge status={relay.agentStatus} />
                 </div>
                 {relay.agentInfo && (
-                    <div style={{ display: "flex", gap: "16px", fontSize: "0.7rem", opacity: 0.4, fontFamily: "monospace" }}>
+                    <div style={{
+                        display: "flex", gap: "14px", fontSize: "0.68rem",
+                        opacity: 0.35, fontFamily: "'JetBrains Mono', monospace",
+                    }}>
                         <span>🖥 {relay.agentInfo.hostname}</span>
                         <span>📡 {relay.agentInfo.ip}</span>
                         <span>⏱ {formatUptime(relay.agentInfo.uptime)}</span>
@@ -110,63 +160,61 @@ export default function TerminalPage() {
 
             {/* ── Preset Buttons ── */}
             <div style={{
-                padding: "12px 20px",
-                display: "flex", alignItems: "center", gap: "8px",
-                background: "rgba(15, 10, 25, 0.8)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.08)",
+                padding: "8px 20px",
+                display: "flex", alignItems: "center", gap: "6px",
+                background: "rgba(15, 10, 25, 0.85)",
+                borderBottom: "1px solid rgba(155, 89, 182, 0.06)",
                 flexWrap: "wrap",
                 overflowX: "auto",
+                flexShrink: 0,
             }}>
+                <span style={{
+                    fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase",
+                    letterSpacing: "0.08em", color: "rgba(155, 89, 182, 0.4)",
+                    marginRight: "6px",
+                }}>Presets</span>
+
                 {Object.entries(presetList).map(([key, info]) => (
                     <button
                         key={key}
+                        className="preset-btn"
                         onClick={() => runPreset(key, info)}
                         disabled={relay.agentStatus !== "online"}
                         title={info.description}
                         style={{
-                            padding: "6px 14px",
-                            borderRadius: "10px",
-                            border: "1px solid rgba(155, 89, 182, 0.2)",
+                            padding: "5px 12px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(155, 89, 182, 0.15)",
                             background: relay.agentStatus === "online"
-                                ? "rgba(155, 89, 182, 0.08)"
+                                ? "rgba(155, 89, 182, 0.06)"
                                 : "rgba(255,255,255,0.02)",
-                            color: relay.agentStatus === "online" ? "#e0d0f0" : "rgba(255,255,255,0.2)",
-                            fontSize: "0.78rem",
+                            color: relay.agentStatus === "online" ? "#d4c0e8" : "rgba(255,255,255,0.15)",
+                            fontSize: "0.72rem",
                             fontWeight: 500,
                             cursor: relay.agentStatus === "online" ? "pointer" : "not-allowed",
                             whiteSpace: "nowrap",
                             transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (relay.agentStatus === "online") {
-                                e.currentTarget.style.background = "rgba(155, 89, 182, 0.2)";
-                                e.currentTarget.style.borderColor = "rgba(155, 89, 182, 0.4)";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = relay.agentStatus === "online"
-                                ? "rgba(155, 89, 182, 0.08)" : "rgba(255,255,255,0.02)";
-                            e.currentTarget.style.borderColor = "rgba(155, 89, 182, 0.2)";
                         }}
                     >
                         {info.label}
                     </button>
                 ))}
 
-                <div style={{ width: "1px", height: "24px", background: "rgba(155,89,182,0.15)", margin: "0 4px" }} />
+                <div style={{ width: "1px", height: "20px", background: "rgba(155,89,182,0.1)", margin: "0 4px" }} />
 
                 <button
+                    className="preset-btn"
                     onClick={() => newTerminal()}
                     disabled={relay.agentStatus !== "online"}
                     style={{
-                        padding: "6px 14px",
-                        borderRadius: "10px",
-                        border: "1px solid rgba(0, 230, 118, 0.2)",
+                        padding: "5px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(0, 230, 118, 0.15)",
                         background: relay.agentStatus === "online"
-                            ? "rgba(0, 230, 118, 0.08)"
+                            ? "rgba(0, 230, 118, 0.06)"
                             : "rgba(255,255,255,0.02)",
-                        color: relay.agentStatus === "online" ? "#a0f0c0" : "rgba(255,255,255,0.2)",
-                        fontSize: "0.78rem",
+                        color: relay.agentStatus === "online" ? "#90e8b8" : "rgba(255,255,255,0.15)",
+                        fontSize: "0.72rem",
                         fontWeight: 500,
                         cursor: relay.agentStatus === "online" ? "pointer" : "not-allowed",
                         whiteSpace: "nowrap",
@@ -181,45 +229,52 @@ export default function TerminalPage() {
             {tabs.length > 0 && (
                 <div style={{
                     display: "flex",
-                    background: "rgba(15, 10, 25, 0.9)",
-                    borderBottom: "1px solid rgba(155, 89, 182, 0.1)",
+                    background: "rgba(10, 8, 20, 0.95)",
+                    borderBottom: "1px solid rgba(155, 89, 182, 0.08)",
                     overflowX: "auto",
+                    flexShrink: 0,
                 }}>
                     {tabs.map((tab) => (
                         <div
                             key={tab.id}
+                            className="tab-item"
                             onClick={() => setActiveTab(tab.id)}
                             style={{
-                                padding: "8px 16px",
-                                fontSize: "0.75rem",
+                                padding: "7px 14px",
+                                fontSize: "0.7rem",
                                 fontWeight: 500,
                                 cursor: "pointer",
-                                display: "flex", alignItems: "center", gap: "8px",
-                                borderBottom: activeTab === tab.id ? "2px solid var(--primary)" : "2px solid transparent",
-                                background: activeTab === tab.id ? "rgba(155, 89, 182, 0.06)" : "transparent",
-                                color: activeTab === tab.id ? "#e0d0f0" : "rgba(255,255,255,0.4)",
+                                display: "flex", alignItems: "center", gap: "7px",
+                                borderBottom: activeTab === tab.id
+                                    ? "2px solid var(--primary)"
+                                    : "2px solid transparent",
+                                background: activeTab === tab.id
+                                    ? "rgba(155, 89, 182, 0.05)"
+                                    : "transparent",
+                                color: activeTab === tab.id ? "#e0d0f0" : "rgba(255,255,255,0.35)",
                                 transition: "all 0.15s ease",
                                 whiteSpace: "nowrap",
                                 userSelect: "none",
                             }}
                         >
                             <span style={{
-                                width: "6px", height: "6px", borderRadius: "50%",
+                                width: "5px", height: "5px", borderRadius: "50%",
                                 background: tab.alive ? "#00e676" : "#ff1744",
-                                boxShadow: tab.alive ? "0 0 6px #00e676" : "0 0 6px #ff1744",
+                                boxShadow: tab.alive ? "0 0 5px #00e676" : "0 0 5px #ff1744",
+                                flexShrink: 0,
                             }} />
                             {tab.label}
                             <span
+                                className="close-btn"
                                 onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
                                 style={{
-                                    marginLeft: "4px",
-                                    fontSize: "0.85rem",
-                                    opacity: 0.3,
+                                    marginLeft: "3px",
+                                    fontSize: "0.8rem",
+                                    opacity: 0.25,
                                     cursor: "pointer",
                                     lineHeight: 1,
+                                    transition: "all 0.15s",
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.8"; e.currentTarget.style.color = "#ff1744"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.3"; e.currentTarget.style.color = "inherit"; }}
                             >
                                 ×
                             </span>
@@ -228,8 +283,8 @@ export default function TerminalPage() {
                 </div>
             )}
 
-            {/* ── Terminal Area ── */}
-            <div style={{ flex: 1, position: "relative", background: "#0a0a0a", minHeight: "400px" }}>
+            {/* ── Terminal Area (fills remaining viewport) ── */}
+            <div className="terminal-area" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
                 {tabs.length === 0 ? (
                     <EmptyState
                         agentStatus={relay.agentStatus}
@@ -296,14 +351,18 @@ function XTermView({
                 const fitAddon = new FitAddon();
                 const term = new Terminal({
                     cursorBlink: true,
-                    fontSize: 14,
+                    cursorStyle: "bar",
+                    fontSize: 13,
                     fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                    lineHeight: 1.15,
+                    letterSpacing: 0.3,
                     theme: {
                         background: "#0a0a0a",
                         foreground: "#e0e0e0",
                         cursor: "#9b59b6",
                         cursorAccent: "#0a0a0a",
                         selectionBackground: "rgba(155, 89, 182, 0.3)",
+                        selectionForeground: "#ffffff",
                         black: "#1a1a2e",
                         red: "#ff1744",
                         green: "#00e676",
@@ -352,7 +411,7 @@ function XTermView({
                 // Send initial size
                 relay.resizeTerminal(terminalId, term.cols, term.rows);
 
-                // Resize on window resize
+                // Resize on container resize
                 const resizeObserver = new ResizeObserver(() => {
                     try {
                         fitAddon.fit();
@@ -402,7 +461,7 @@ function XTermView({
             ref={containerRef}
             style={{
                 flex: 1,
-                padding: "4px",
+                padding: "8px 4px 4px 8px",
                 background: "#0a0a0a",
                 overflow: "hidden",
             }}
@@ -424,17 +483,21 @@ function AgentBadge({ status }: { status: string }) {
     return (
         <div style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
-            padding: "4px 12px", borderRadius: "20px",
-            backgroundColor: `${color}15`,
-            border: `1px solid ${color}30`,
+            padding: "3px 10px", borderRadius: "20px",
+            backgroundColor: `${color}10`,
+            border: `1px solid ${color}25`,
         }}>
             <div style={{
-                width: "7px", height: "7px", borderRadius: "50%",
+                width: "6px", height: "6px", borderRadius: "50%",
                 backgroundColor: color,
-                boxShadow: `0 0 8px ${color}`,
-                animation: status === "connecting" ? "pulse 1.5s infinite" : "none",
+                boxShadow: `0 0 6px ${color}`,
+                animation: status === "online"
+                    ? "pulse-glow 3s infinite"
+                    : status === "connecting"
+                        ? "pulse-glow 1s infinite"
+                        : "none",
             }} />
-            <span style={{ fontSize: "0.72rem", fontWeight: 500, color }}>{text}</span>
+            <span style={{ fontSize: "0.68rem", fontWeight: 500, color }}>{text}</span>
         </div>
     );
 }
@@ -456,24 +519,32 @@ function EmptyState({
         }}>
             {agentStatus === "online" ? (
                 <>
-                    <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🖥️</div>
-                    <h2 style={{ fontSize: "1.3rem", fontWeight: 600, margin: "0 0 8px" }}>
+                    <div style={{
+                        fontSize: "2.5rem", marginBottom: "16px",
+                        filter: "drop-shadow(0 0 12px rgba(155, 89, 182, 0.3))",
+                    }}>⌨️</div>
+                    <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: "0 0 8px" }}>
                         <span className="gradient-text">Agent Connected</span>
                     </h2>
-                    <p style={{ opacity: 0.4, fontSize: "0.85rem", maxWidth: "400px", lineHeight: 1.6, margin: "0 0 24px" }}>
+                    <p style={{
+                        opacity: 0.35, fontSize: "0.8rem", maxWidth: "380px",
+                        lineHeight: 1.6, margin: "0 0 20px",
+                    }}>
                         Use the preset buttons above to launch ROS 2 services, or open a blank terminal to run custom commands on your machine.
                     </p>
                     <button
                         onClick={onNewTerminal}
+                        className="preset-btn"
                         style={{
-                            padding: "10px 24px",
-                            borderRadius: "12px",
+                            padding: "8px 22px",
+                            borderRadius: "10px",
                             border: "none",
                             background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                             color: "#fff",
-                            fontSize: "0.9rem",
+                            fontSize: "0.85rem",
                             fontWeight: 600,
                             cursor: "pointer",
+                            transition: "all 0.2s ease",
                         }}
                     >
                         ➕ Open Terminal
@@ -481,31 +552,37 @@ function EmptyState({
                 </>
             ) : agentStatus === "connecting" ? (
                 <>
-                    <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🔌</div>
-                    <h2 style={{ fontSize: "1.3rem", fontWeight: 600, margin: "0 0 8px", color: "#ffab00" }}>
+                    <div style={{
+                        fontSize: "2.5rem", marginBottom: "16px",
+                        animation: "terminal-blink 1.5s infinite",
+                    }}>🔌</div>
+                    <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: "0 0 8px", color: "#ffab00" }}>
                         Connecting to Relay…
                     </h2>
-                    <p style={{ opacity: 0.4, fontSize: "0.85rem", maxWidth: "400px", lineHeight: 1.6 }}>
+                    <p style={{ opacity: 0.35, fontSize: "0.8rem", maxWidth: "380px", lineHeight: 1.6 }}>
                         Attempting to connect to the relay server. This may take a moment.
                     </p>
                 </>
             ) : (
                 <>
-                    <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🔴</div>
-                    <h2 style={{ fontSize: "1.3rem", fontWeight: 600, margin: "0 0 8px", color: "#ff1744" }}>
+                    <div style={{ fontSize: "2.5rem", marginBottom: "16px" }}>🔴</div>
+                    <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: "0 0 8px", color: "#ff1744" }}>
                         Agent Offline
                     </h2>
-                    <p style={{ opacity: 0.4, fontSize: "0.85rem", maxWidth: "400px", lineHeight: 1.6, margin: "0 0 16px" }}>
+                    <p style={{
+                        opacity: 0.35, fontSize: "0.8rem", maxWidth: "380px",
+                        lineHeight: 1.6, margin: "0 0 14px",
+                    }}>
                         The local agent is not running on your laptop. Start it with:
                     </p>
                     <code style={{
                         display: "block",
-                        padding: "12px 20px",
-                        borderRadius: "12px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        padding: "10px 18px",
+                        borderRadius: "10px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
                         color: "#ffab00",
-                        fontSize: "0.8rem",
+                        fontSize: "0.75rem",
                         fontFamily: "'JetBrains Mono', monospace",
                         userSelect: "all",
                     }}>

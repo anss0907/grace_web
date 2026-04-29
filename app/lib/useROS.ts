@@ -2,17 +2,34 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as ROSLIB from "roslib";
+import { RELAY_URL, CLIENT_TOKEN } from "./relay-config";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 /**
- * Build the rosbridge URL from the browser's current hostname.
- * If accessed via IP (e.g. 10.5.28.243:3000), connects to ws://10.5.28.243:9090
- * If accessed via localhost, connects to ws://localhost:9090
+ * Build the rosbridge URL.
+ * - On localhost → connects directly to ws://localhost:9090
+ * - On live site → proxies through the relay: wss://relay?role=rosbridge&token=...
  */
 function getDefaultRosbridgeUrl() {
     if (typeof window === "undefined") return "ws://localhost:9090";
-    return `ws://${window.location.hostname}:9090`;
+
+    const hostname = window.location.hostname;
+    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.") || hostname.startsWith("192.168.");
+
+    if (isLocal) {
+        // Direct connection on local network
+        return `ws://${hostname}:9090`;
+    }
+
+    // Live site — proxy through relay
+    if (RELAY_URL && CLIENT_TOKEN) {
+        const base = RELAY_URL.startsWith("ws") ? RELAY_URL : `wss://${RELAY_URL}`;
+        return `${base}?role=rosbridge&token=${CLIENT_TOKEN}`;
+    }
+
+    // Fallback (won't work on live site without relay)
+    return `ws://${hostname}:9090`;
 }
 
 /**

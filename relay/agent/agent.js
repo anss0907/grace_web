@@ -55,6 +55,7 @@ const terminals = new Map(); // id → { pty, label, command, createdAt }
 let ws = null;
 let reconnectDelay = 1000;
 const MAX_RECONNECT_DELAY = 30000;
+let rosbridgeWs = null; // connection to local rosbridge server
 
 /* ── Connect to Relay ─────────────────────────────── */
 function connect() {
@@ -137,6 +138,18 @@ function handleMessage(msg) {
 
         case "get_presets":
             sendPresets();
+            break;
+
+        case "rosbridge_connect":
+            connectRosbridge();
+            break;
+
+        case "rosbridge_send":
+            forwardToRosbridge(msg.data);
+            break;
+
+        case "rosbridge_disconnect":
+            disconnectRosbridge();
             break;
 
         default:
@@ -329,6 +342,60 @@ function send(obj) {
     }
 }
 
+/* ── Rosbridge Proxy ─────────────────────────────── */
+function connectRosbridge() {
+    if (rosbridgeWs) {
+        console.log("⚠️  Rosbridge already connected, reconnecting...");
+        try { rosbridgeWs.close(); } catch { /* ignore */ }
+    }
+
+    const rosbridgeUrl = "ws://localhost:9090";
+    console.log(`🌉 Connecting to local rosbridge: ${rosbridgeUrl}`);
+    logCommand("ROSBRIDGE_CONNECT", rosbridgeUrl);
+
+    try {
+        rosbridgeWs = new WebSocket(rosbridgeUrl);
+
+        rosbridgeWs.on("open", () => {
+            console.log("✅ Connected to local rosbridge");
+        });
+
+        rosbridgeWs.on("message", (data) => {
+            // Forward rosbridge responses back through the relay
+            send({
+                type: "rosbridge_recv",
+                data: data.toString(),
+            });
+        });
+
+        rosbridgeWs.on("close", () => {
+            console.log("🔴 Local rosbridge disconnected");
+            rosbridgeWs = null;
+        });
+
+        rosbridgeWs.on("error", (err) => {
+            console.error("⚠️  Rosbridge error:", err.message);
+        });
+    } catch (err) {
+        console.error("❌ Failed to connect to rosbridge:", err.message);
+    }
+}
+
+function forwardToRosbridge(data) {
+    if (rosbridgeWs && rosbridgeWs.readyState === WebSocket.OPEN) {
+        rosbridgeWs.send(data);
+    }
+}
+
+function disconnectRosbridge() {
+    if (rosbridgeWs) {
+        console.log("🔌 Disconnecting from local rosbridge");
+        logCommand("ROSBRIDGE_DISCONNECT", "Proxy closed");
+        try { rosbridgeWs.close(); } catch { /* ignore */ }
+        rosbridgeWs = null;
+    }
+}
+
 /* ── Graceful Shutdown ────────────────────────────── */
 function shutdown() {
     console.log("\n🛑 Shutting down agent...");
@@ -339,6 +406,9 @@ function shutdown() {
         try { term.pty.kill(); } catch { /* ignore */ }
     });
     terminals.clear();
+
+    // Close rosbridge
+    disconnectRosbridge();
 
     // Close WebSocket
     if (ws) {
