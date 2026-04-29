@@ -60,6 +60,11 @@ export default function TerminalPage() {
         });
     }, [relay, activeTab]);
 
+    /* ── Send Ctrl+C to stop a running command ── */
+    const stopCommand = useCallback((id: string) => {
+        relay.sendInput(id, "\x03"); // Ctrl+C character
+    }, [relay]);
+
     /* ── Handle terminal exit ── */
     useEffect(() => {
         tabs.forEach((tab) => {
@@ -126,6 +131,29 @@ export default function TerminalPage() {
                     background: linear-gradient(to bottom, rgba(155, 89, 182, 0.03), transparent);
                     pointer-events: none;
                     z-index: 1;
+                }
+                .stop-float {
+                    position: absolute;
+                    bottom: 20px; right: 20px;
+                    z-index: 10;
+                    padding: 8px 16px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 23, 68, 0.3);
+                    background: rgba(255, 23, 68, 0.12);
+                    color: #ff5252;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    backdrop-filter: blur(8px);
+                    transition: all 0.2s;
+                    display: none;
+                }
+                .stop-float:hover {
+                    background: rgba(255, 23, 68, 0.25);
+                    box-shadow: 0 4px 16px rgba(255, 23, 68, 0.2);
+                }
+                @media (max-width: 768px) {
+                    .stop-float { display: block; }
                 }
             `}</style>
 
@@ -264,11 +292,29 @@ export default function TerminalPage() {
                                 flexShrink: 0,
                             }} />
                             {tab.label}
+                            {tab.alive && (
+                                <span
+                                    className="close-btn"
+                                    title="Stop command (Ctrl+C)"
+                                    onClick={(e) => { e.stopPropagation(); stopCommand(tab.id); }}
+                                    style={{
+                                        marginLeft: "3px",
+                                        fontSize: "0.7rem",
+                                        opacity: 0.3,
+                                        cursor: "pointer",
+                                        lineHeight: 1,
+                                        transition: "all 0.15s",
+                                        color: "#ff5252",
+                                    }}
+                                >
+                                    ⏹
+                                </span>
+                            )}
                             <span
                                 className="close-btn"
                                 onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
                                 style={{
-                                    marginLeft: "3px",
+                                    marginLeft: "2px",
                                     fontSize: "0.8rem",
                                     opacity: 0.25,
                                     cursor: "pointer",
@@ -298,6 +344,7 @@ export default function TerminalPage() {
                                 position: "absolute",
                                 inset: 0,
                                 display: activeTab === tab.id ? "flex" : "none",
+                                flexDirection: "column",
                             }}
                         >
                             <XTermView
@@ -305,6 +352,14 @@ export default function TerminalPage() {
                                 relay={relay}
                                 isActive={activeTab === tab.id}
                             />
+                            {tab.alive && (
+                                <button
+                                    className="stop-float"
+                                    onClick={() => stopCommand(tab.id)}
+                                >
+                                    ⏹ Stop Command
+                                </button>
+                            )}
                         </div>
                     ))
                 )}
@@ -461,7 +516,8 @@ function XTermView({
             ref={containerRef}
             style={{
                 flex: 1,
-                padding: "8px 4px 4px 8px",
+                padding: "8px 4px 0 8px",
+                paddingBottom: "clamp(60px, 8vw, 130px)", /* 4 lines mobile, ~10 lines desktop */
                 background: "#0a0a0a",
                 overflow: "hidden",
             }}
