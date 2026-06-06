@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 
 export default function VizPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any[]>([])
   const [live, setLive] = useState(true)
 
@@ -26,6 +27,7 @@ export default function VizPage() {
 
     fetchInitialData()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let subscription: any
 
     if (live) {
@@ -47,7 +49,8 @@ export default function VizPage() {
     }
   }, [live])
 
-  const formatTime = (ts: string | number | undefined) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formatTime = (ts: any) => {
     if (!ts) return ''
     const d = new Date(ts)
     return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`
