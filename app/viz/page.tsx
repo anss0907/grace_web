@@ -47,7 +47,8 @@ export default function VizPage() {
     }
   }, [live])
 
-  const formatTime = (ts: string) => {
+  const formatTime = (ts: string | number | undefined) => {
+    if (!ts) return ''
     const d = new Date(ts)
     return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`
   }
