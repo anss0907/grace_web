@@ -45,6 +45,7 @@ next-env.d.ts
 # relay agent/server
 relay/agent/.env
 relay/server/.env
+.env.local
 relay/agent/node_modules/
 relay/server/node_modules/
 
