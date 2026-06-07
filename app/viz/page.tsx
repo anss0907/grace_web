@@ -50,13 +50,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '50px',
     padding: '8px 16px',
   },
-  dot: (live: boolean): React.CSSProperties => ({
-    width: '10px',
-    height: '10px',
-    borderRadius: '50%',
-    background: live ? '#10b981' : '#ef4444',
-    boxShadow: live ? '0 0 8px #10b981' : 'none',
-  }),
   pauseBtn: {
     background: 'rgba(255,255,255,0.07)',
     border: '1px solid rgba(255,255,255,0.1)',
@@ -66,47 +59,71 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '4px 14px',
     fontSize: '12px',
   },
-  sectionLabel: (color: string): React.CSSProperties => ({
-    fontSize: '13px',
-    fontWeight: 600,
-    letterSpacing: '1.5px',
-    textTransform: 'uppercase',
-    color,
-    marginBottom: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  }),
-  sectionDivider: (color: string): React.CSSProperties => ({
-    flex: 1,
-    height: '1px',
-    background: `linear-gradient(90deg, ${color}40, transparent)`,
-    marginLeft: '8px',
-  }),
   kpiRow: {
     display: 'flex',
     gap: '12px',
     marginBottom: '16px',
     flexWrap: 'wrap' as const,
   },
-  kpiCard: (accent: string): React.CSSProperties => ({
-    flex: '1 1 140px',
-    background: 'rgba(255,255,255,0.03)',
-    border: `1px solid ${accent}30`,
-    borderRadius: '16px',
-    padding: '16px',
-    position: 'relative',
-    overflow: 'hidden',
-  }),
-  kpiAccentBar: (accent: string): React.CSSProperties => ({
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '2px',
-    background: accent,
-    borderRadius: '16px 16px 0 0',
-  }),
+  kpiLabel: {
+    color: '#64748b',
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '1px',
+    textTransform: 'uppercase' as const,
+    margin: '0 0 6px 0',
+  },
+  kpiValue: {
+    color: '#f1f5f9',
+    fontSize: '22px',
+    fontWeight: 700,
+    margin: 0,
+  },
+}
+
+// ─── Dynamic style functions ───────────────────────────────────────────────────
+const dotStyle = (live: boolean): React.CSSProperties => ({
+  width: '10px',
+  height: '10px',
+  borderRadius: '50%',
+  background: live ? '#10b981' : '#ef4444',
+  boxShadow: live ? '0 0 8px #10b981' : 'none',
+})
+const sectionLabelStyle = (color: string): React.CSSProperties => ({
+  fontSize: '13px',
+  fontWeight: 600,
+  letterSpacing: '1.5px',
+  textTransform: 'uppercase',
+  color,
+  marginBottom: '12px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+})
+const sectionDividerStyle = (color: string): React.CSSProperties => ({
+  flex: 1,
+  height: '1px',
+  background: `linear-gradient(90deg, ${color}40, transparent)`,
+  marginLeft: '8px',
+})
+const kpiCardStyle = (accent: string): React.CSSProperties => ({
+  flex: '1 1 140px',
+  background: 'rgba(255,255,255,0.03)',
+  border: `1px solid ${accent}30`,
+  borderRadius: '16px',
+  padding: '16px',
+  position: 'relative',
+  overflow: 'hidden',
+})
+const kpiAccentBarStyle = (accent: string): React.CSSProperties => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: '2px',
+  background: accent,
+  borderRadius: '16px 16px 0 0',
+})
   kpiLabel: {
     color: '#64748b',
     fontSize: '11px',
@@ -196,7 +213,7 @@ export default function VizPage() {
   const fmt = (ts: any) => {
     if (!ts) return ''
     const d = new Date(ts)
-    return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+    return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
   }
 
   const latest = data[data.length - 1] || {}
@@ -252,10 +269,10 @@ export default function VizPage() {
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis yAxisId="l" {...AXIS_STYLE} domain={['auto','auto']} />
-                    <YAxis yAxisId="r" orientation="right" {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis yAxisId="l" {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <YAxis yAxisId="r" orientation="right" {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line yAxisId="l" type="monotone" dataKey="battery_v" name="Battery (V)" stroke="#3b82f6" dot={false} strokeWidth={2} />
                     <Line yAxisId="r" type="monotone" dataKey="board_temp_c" name="Board Temp (°C)" stroke="#ef4444" dot={false} strokeWidth={2} />
                   </LineChart>
@@ -268,10 +285,10 @@ export default function VizPage() {
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis yAxisId="l" {...AXIS_STYLE} domain={['auto','auto']} />
-                    <YAxis yAxisId="r" orientation="right" {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis yAxisId="l" {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <YAxis yAxisId="r" orientation="right" {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line yAxisId="l" type="monotone" dataKey="bme_temp_c" name="Temp (°C)" stroke="#f59e0b" dot={false} strokeWidth={2} />
                     <Line yAxisId="r" type="monotone" dataKey="bme_humidity_pct" name="Humidity (%)" stroke="#06b6d4" dot={false} strokeWidth={2} />
                   </LineChart>
@@ -286,7 +303,7 @@ export default function VizPage() {
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
                     <YAxis {...AXIS_STYLE} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="pm1_0" name="PM 1.0" stroke="#a855f7" dot={false} strokeWidth={2} />
                     <Line type="monotone" dataKey="pm2_5" name="PM 2.5" stroke="#ec4899" dot={false} strokeWidth={2} />
                     <Line type="monotone" dataKey="pm10" name="PM 10" stroke="#f43f5e" dot={false} strokeWidth={2} />
@@ -300,9 +317,9 @@ export default function VizPage() {
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="bme_pressure_hpa" name="Pressure (hPa)" stroke="#eab308" dot={false} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -314,9 +331,9 @@ export default function VizPage() {
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="bme_gas_kohm" name="Gas (kΩ)" stroke="#22c55e" dot={false} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -356,9 +373,9 @@ export default function VizPage() {
                   <LineChart data={healthData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="heart_rate_bpm" name="Heart Rate" stroke="#ef4444" dot={false} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -370,9 +387,9 @@ export default function VizPage() {
                   <LineChart data={healthData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
-                    <YAxis {...AXIS_STYLE} domain={['auto','auto']} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="bp_systolic" name="Systolic" stroke="#8b5cf6" dot={false} strokeWidth={2} />
                     <Line type="monotone" dataKey="bp_diastolic" name="Diastolic" stroke="#3b82f6" dot={false} strokeWidth={2} />
                   </LineChart>
@@ -387,7 +404,7 @@ export default function VizPage() {
                     <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
                     <YAxis {...AXIS_STYLE} domain={['dataMin - 2', 100]} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
-                    <Legend iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
                     <Line type="monotone" dataKey="spo2_percent" name="SpO2" stroke="#10b981" dot={false} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
