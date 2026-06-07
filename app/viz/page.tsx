@@ -79,6 +79,32 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     margin: 0,
   },
+  chartsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '16px',
+    marginBottom: '32px',
+  },
+  chartCard: {
+    background: 'rgba(255,255,255,0.025)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: '16px',
+    padding: '16px',
+    overflow: 'hidden',
+  },
+  chartTitle: {
+    color: '#94a3b8',
+    fontSize: '12px',
+    fontWeight: 600,
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase' as const,
+    margin: '0 0 12px 0',
+  },
+  empty: {
+    color: '#334155',
+    fontSize: '14px',
+    padding: '24px 0',
+  },
 }
 
 // ─── Dynamic style functions ───────────────────────────────────────────────────
@@ -124,34 +150,6 @@ const kpiAccentBarStyle = (accent: string): React.CSSProperties => ({
   background: accent,
   borderRadius: '16px 16px 0 0',
 })
-
-  chartsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '16px',
-    marginBottom: '32px',
-  },
-  chartCard: {
-    background: 'rgba(255,255,255,0.025)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: '16px',
-    padding: '16px',
-    overflow: 'hidden',
-  },
-  chartTitle: {
-    color: '#94a3b8',
-    fontSize: '12px',
-    fontWeight: 600,
-    letterSpacing: '0.8px',
-    textTransform: 'uppercase' as const,
-    margin: '0 0 12px 0',
-  },
-  empty: {
-    color: '#334155',
-    fontSize: '14px',
-    padding: '24px 0',
-  },
-}
 
 const TOOLTIP_STYLE = { backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }
 const GRID_STROKE = 'rgba(255,255,255,0.05)'
