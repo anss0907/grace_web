@@ -92,7 +92,7 @@ export default function TerminalPage() {
             recoveredRef.current.add(info.id);
             setTabs((prev) => {
                 if (prev.some((t) => t.id === info.id)) return prev; // already in UI
-                return [...prev, { id: info.id, label: info.label + " 🔄", preset: info.command, alive: true }];
+                return [...prev, { id: info.id, label: info.label, preset: info.command, alive: true }];
             });
             setActiveTab((cur) => cur ?? info.id);
         });
@@ -596,15 +596,6 @@ function XTermView({
                 // Receive output from agent
                 relay.onTerminalOutput(terminalId, (data: string) => {
                     term.write(data);
-                });
-
-                // Request scrollback replay for recovered terminals
-                relay.getScrollback(terminalId, (data: string | null) => {
-                    if (data && data.length > 0) {
-                        term.write("\x1b[90m\r\n--- Session recovered — replaying last output ---\x1b[0m\r\n");
-                        term.write(data);
-                        term.write("\x1b[90m\r\n--- Live — type or press Enter to continue ---\x1b[0m\r\n");
-                    }
                 });
 
                 // Handle terminal exit
