@@ -66,13 +66,15 @@ export function useROS(url?: string) {
         });
 
         ros.on("close", () => {
-            setStatus("disconnected");
-            // Auto-reconnect after 3 seconds
-            if (!reconnectTimer.current) {
-                reconnectTimer.current = setTimeout(() => {
-                    reconnectTimer.current = null;
-                    connect();
-                }, 3000);
+            if (rosRef.current === ros) {
+                setStatus("disconnected");
+                // Auto-reconnect after 3 seconds
+                if (!reconnectTimer.current) {
+                    reconnectTimer.current = setTimeout(() => {
+                        reconnectTimer.current = null;
+                        connect();
+                    }, 3000);
+                }
             }
         });
     }, [resolvedUrl]);
