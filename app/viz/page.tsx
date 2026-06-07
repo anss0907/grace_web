@@ -124,20 +124,7 @@ const kpiAccentBarStyle = (accent: string): React.CSSProperties => ({
   background: accent,
   borderRadius: '16px 16px 0 0',
 })
-  kpiLabel: {
-    color: '#64748b',
-    fontSize: '11px',
-    fontWeight: 600,
-    letterSpacing: '1px',
-    textTransform: 'uppercase' as const,
-    margin: '0 0 6px 0',
-  },
-  kpiValue: {
-    color: '#f1f5f9',
-    fontSize: '22px',
-    fontWeight: 700,
-    margin: 0,
-  },
+
   chartsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
@@ -231,7 +218,7 @@ export default function VizPage() {
           </div>
           <div style={styles.statusBadge}>
             <span style={{ fontSize: '13px', color: '#64748b' }}>Stream</span>
-            <div style={styles.dot(live)} />
+            <div style={dotStyle(live)} />
             <span style={{ fontSize: '13px', color: live ? '#10b981' : '#ef4444', fontWeight: 600 }}>
               {live ? 'LIVE' : 'PAUSED'}
             </span>
@@ -243,10 +230,10 @@ export default function VizPage() {
 
         {/* ═══════════ ROBOT SECTION ═══════════ */}
         <div>
-          <div style={styles.sectionLabel('#60a5fa')}>
+          <div style={sectionLabelStyle('#60a5fa')}>
             <span>🤖</span>
             <span>Robot Telemetry</span>
-            <div style={styles.sectionDivider('#60a5fa')} />
+            <div style={sectionDividerStyle('#60a5fa')} />
           </div>
 
           {/* KPIs */}
@@ -347,10 +334,10 @@ export default function VizPage() {
 
         {/* ═══════════ HEALTH SECTION ═══════════ */}
         <div>
-          <div style={styles.sectionLabel('#34d399')}>
+          <div style={sectionLabelStyle('#34d399')}>
             <span>❤️</span>
             <span>User Health Vitals</span>
-            <div style={styles.sectionDivider('#34d399')} />
+            <div style={sectionDividerStyle('#34d399')} />
           </div>
 
           {/* KPIs */}
@@ -423,8 +410,8 @@ export default function VizPage() {
 
 function KpiCard({ accent, label, value }: { accent: string; label: string; value: string }) {
   return (
-    <div style={styles.kpiCard(accent)}>
-      <div style={styles.kpiAccentBar(accent)} />
+    <div style={kpiCardStyle(accent)}>
+      <div style={kpiAccentBarStyle(accent)} />
       <p style={styles.kpiLabel}>{label}</p>
       <p style={styles.kpiValue}>{value}</p>
     </div>
