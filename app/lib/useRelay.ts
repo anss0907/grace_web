@@ -37,6 +37,9 @@ export type RelayMessage =
     | { type: "terminal_list"; terminals: TerminalInfo[] }
     | { type: "agent_status"; hostname: string; platform: string; uptime: number; ip: string; nodeVersion: string; terminalCount: number }
     | { type: "presets_list"; presets: Record<string, PresetInfo> }
+    | { type: "kill_all_done"; killed: number }
+    | { type: "kill_ros_done"; target: string; success: boolean; message: string }
+    | { type: "scrollback"; id: string; data: string | null }
     | { type: "error"; message: string };
 
 /* ── Hook ─────────────────────────────────────────── */
@@ -50,6 +53,8 @@ export function useRelay() {
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const listenersRef = useRef<Map<string, (data: string) => void>>(new Map());
     const exitListenersRef = useRef<Map<string, (exitCode: number | null, signal: string | null) => void>>(new Map());
+    const scrollbackListenersRef = useRef<Map<string, (data: string | null) => void>>(new Map());
+    const killRosListenersRef = useRef<Array<(result: { target: string; success: boolean; message: string }) => void>>([]);
 
     const connect = useCallback(() => {
         const url = getRelayUrl();
@@ -127,6 +132,25 @@ export function useRelay() {
                         setPresets(msg.presets);
                         break;
 
+                    case "kill_all_done":
+                        // Terminals already cleared by individual kill_terminal events
+                        break;
+
+                    case "kill_ros_done": {
+                        const callbacks = killRosListenersRef.current.splice(0);
+                        callbacks.forEach((cb) => cb({ target: msg.target, success: msg.success, message: msg.message }));
+                        break;
+                    }
+
+                    case "scrollback": {
+                        const sbListener = scrollbackListenersRef.current.get(msg.id);
+                        if (sbListener) {
+                            scrollbackListenersRef.current.delete(msg.id);
+                            sbListener(msg.data);
+                        }
+                        break;
+                    }
+
                     case "error":
                         console.error("Agent error:", msg.message);
                         break;
@@ -138,15 +162,17 @@ export function useRelay() {
 
         ws.onclose = () => {
             console.log("🔴 Disconnected from relay");
-            wsRef.current = null;
-            setAgentStatus("connecting");
+            if (wsRef.current === ws) {
+                wsRef.current = null;
+                setAgentStatus("connecting");
 
-            // Auto-reconnect after 3s
-            if (!reconnectTimer.current) {
-                reconnectTimer.current = setTimeout(() => {
-                    reconnectTimer.current = null;
-                    connect();
-                }, 3000);
+                // Auto-reconnect after 3s
+                if (!reconnectTimer.current) {
+                    reconnectTimer.current = setTimeout(() => {
+                        reconnectTimer.current = null;
+                        connect();
+                    }, 3000);
+                }
             }
         };
 
@@ -191,6 +217,27 @@ export function useRelay() {
         send({ type: "kill_terminal", id });
         listenersRef.current.delete(id);
         exitListenersRef.current.delete(id);
+        scrollbackListenersRef.current.delete(id);
+    }, [send]);
+
+    const killAllTerminals = useCallback(() => {
+        send({ type: "kill_all_terminals" });
+        listenersRef.current.clear();
+        exitListenersRef.current.clear();
+        scrollbackListenersRef.current.clear();
+    }, [send]);
+
+    const killRosProcesses = useCallback((
+        target: "all" | "gazebo" | "rosbridge",
+        callback?: (result: { target: string; success: boolean; message: string }) => void
+    ) => {
+        if (callback) killRosListenersRef.current.push(callback);
+        send({ type: "kill_ros", target });
+    }, [send]);
+
+    const getScrollback = useCallback((id: string, callback: (data: string | null) => void) => {
+        scrollbackListenersRef.current.set(id, callback);
+        send({ type: "get_scrollback", id });
     }, [send]);
 
     const onTerminalOutput = useCallback((id: string, callback: (data: string) => void) => {
@@ -211,6 +258,9 @@ export function useRelay() {
         sendInput,
         resizeTerminal,
         killTerminal,
+        killAllTerminals,
+        killRosProcesses,
+        getScrollback,
         onTerminalOutput,
         onTerminalExit,
     };

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRelay } from "../lib/useRelay";
+import { useAuth } from "../components/AuthProvider";
 import type { PresetInfo } from "../lib/useRelay";
+import "@xterm/xterm/css/xterm.css";
 
 /* ── Types ────────────────────────────────────────── */
 interface TerminalTab {
@@ -29,8 +31,12 @@ function formatUptime(seconds: number) {
    ═══════════════════════════════════════════════════ */
 export default function TerminalPage() {
     const relay = useRelay();
+    const { isAuthenticated } = useAuth();
     const [tabs, setTabs] = useState<TerminalTab[]>([]);
     const [activeTab, setActiveTab] = useState<string | null>(null);
+    const [killRosStatus, setKillRosStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+    const [killing, setKilling] = useState<string | null>(null); // which kill is in progress
+    const recoveredRef = useRef<Set<string>>(new Set()); // track IDs we already recovered
 
     /* ── Create a new blank terminal ── */
     const newTerminal = useCallback((label?: string) => {
@@ -71,12 +77,47 @@ export default function TerminalPage() {
             if (tab.alive) {
                 relay.onTerminalExit(tab.id, () => {
                     setTabs((prev) =>
-                        prev.map((t) => (t.id === tab.id ? { ...t, alive: false, label: t.label + " (exited)" } : t))
+                        prev.map((t) => (t.id === tab.id ? { ...t, alive: false, label: t.label.replace(" 🔄", "") + " (exited)" } : t))
                     );
                 });
             }
         });
     }, [tabs, relay]);
+
+    /* ── Recover existing terminals from agent on connect ── */
+    useEffect(() => {
+        if (relay.agentStatus !== "online" || relay.terminals.length === 0) return;
+        relay.terminals.forEach((info) => {
+            if (recoveredRef.current.has(info.id)) return; // already added
+            recoveredRef.current.add(info.id);
+            setTabs((prev) => {
+                if (prev.some((t) => t.id === info.id)) return prev; // already in UI
+                return [...prev, { id: info.id, label: info.label + " 🔄", preset: info.command, alive: true }];
+            });
+            setActiveTab((cur) => cur ?? info.id);
+        });
+    }, [relay.terminals, relay.agentStatus]);
+
+    /* ── Emergency kill helpers ── */
+    const handleKillRos = useCallback((target: "all" | "gazebo" | "rosbridge") => {
+        setKilling(target);
+        setKillRosStatus(null);
+        relay.killRosProcesses(target, (result) => {
+            setKillRosStatus({ msg: result.message, ok: result.success });
+            setKilling(null);
+            setTimeout(() => setKillRosStatus(null), 5000);
+        });
+    }, [relay]);
+
+    const handleKillAllTerminals = useCallback(() => {
+        setKilling("terminals");
+        relay.killAllTerminals();
+        // Clear local tabs too
+        setTabs([]);
+        setActiveTab(null);
+        recoveredRef.current.clear();
+        setTimeout(() => setKilling(null), 1500);
+    }, [relay]);
 
     /* ── Preset buttons (hardcoded fallback + dynamic from agent) ── */
     const defaultPresets: Record<string, PresetInfo> = {
@@ -105,56 +146,44 @@ export default function TerminalPage() {
                     0%, 100% { opacity: 1; }
                     50% { opacity: 0.3; }
                 }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .kill-spin { animation: spin 0.8s linear infinite; display: inline-block; }
                 .preset-btn:hover:not(:disabled) {
                     transform: translateY(-1px);
                     box-shadow: 0 4px 12px rgba(155, 89, 182, 0.2);
                 }
-                .preset-btn:active:not(:disabled) {
-                    transform: translateY(0);
+                .preset-btn:active:not(:disabled) { transform: translateY(0); }
+                .kill-btn:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    filter: brightness(1.2);
                 }
-                .tab-item:hover {
-                    background: rgba(155, 89, 182, 0.08) !important;
+                .kill-btn:active:not(:disabled) { transform: translateY(0); }
+                .tab-item:hover { background: rgba(155, 89, 182, 0.08) !important; }
+                .close-btn:hover { color: #ff1744 !important; opacity: 0.9 !important; }
+                .xterm { height: 100%; }
+                .xterm .xterm-viewport { overflow-y: auto !important; }
+                .xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }
+                .xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+                .xterm .xterm-viewport::-webkit-scrollbar-thumb {
+                    background: rgba(155, 89, 182, 0.3); border-radius: 4px;
                 }
-                .close-btn:hover {
-                    color: #ff1744 !important;
-                    opacity: 0.9 !important;
-                }
-                .terminal-area {
-                    position: relative;
-                    background: #0a0a0a;
-                }
+                .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgba(155, 89, 182, 0.5); }
+                .terminal-area { position: relative; background: #0a0a0a; }
                 .terminal-area::before {
-                    content: '';
-                    position: absolute;
-                    top: 0; left: 0; right: 0;
-                    height: 40px;
+                    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40px;
                     background: linear-gradient(to bottom, rgba(155, 89, 182, 0.03), transparent);
-                    pointer-events: none;
-                    z-index: 1;
+                    pointer-events: none; z-index: 1;
                 }
                 .stop-float {
-                    position: absolute;
-                    bottom: 20px; right: 20px;
-                    z-index: 10;
-                    padding: 8px 16px;
-                    border-radius: 10px;
+                    position: absolute; bottom: 40px; right: 40px; z-index: 10;
+                    padding: 8px 16px; border-radius: 10px;
                     border: 1px solid rgba(255, 23, 68, 0.3);
-                    background: rgba(255, 23, 68, 0.12);
-                    color: #ff5252;
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    backdrop-filter: blur(8px);
-                    transition: all 0.2s;
-                    display: none;
+                    background: rgba(255, 23, 68, 0.12); color: #ff5252;
+                    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+                    backdrop-filter: blur(8px); transition: all 0.2s; display: none;
                 }
-                .stop-float:hover {
-                    background: rgba(255, 23, 68, 0.25);
-                    box-shadow: 0 4px 16px rgba(255, 23, 68, 0.2);
-                }
-                @media (max-width: 768px) {
-                    .stop-float { display: block; }
-                }
+                .stop-float:hover { background: rgba(255, 23, 68, 0.25); box-shadow: 0 4px 16px rgba(255, 23, 68, 0.2); }
+                @media (max-width: 768px) { .stop-float { display: block; } }
             `}</style>
 
             {/* ── Top Bar: Agent Status ── */}
@@ -186,7 +215,7 @@ export default function TerminalPage() {
                 )}
             </div>
 
-            {/* ── Preset Buttons ── */}
+            {/* ── Preset Buttons + Emergency Kill Row ── */}
             <div style={{
                 padding: "8px 20px",
                 display: "flex", alignItems: "center", gap: "6px",
@@ -207,19 +236,19 @@ export default function TerminalPage() {
                         key={key}
                         className="preset-btn"
                         onClick={() => runPreset(key, info)}
-                        disabled={relay.agentStatus !== "online"}
-                        title={info.description}
+                        disabled={relay.agentStatus !== "online" || !isAuthenticated}
+                        title={isAuthenticated ? info.description : "Login required"}
                         style={{
                             padding: "5px 12px",
                             borderRadius: "8px",
                             border: "1px solid rgba(155, 89, 182, 0.15)",
-                            background: relay.agentStatus === "online"
+                            background: relay.agentStatus === "online" && isAuthenticated
                                 ? "rgba(155, 89, 182, 0.06)"
                                 : "rgba(255,255,255,0.02)",
-                            color: relay.agentStatus === "online" ? "#d4c0e8" : "rgba(255,255,255,0.15)",
+                            color: relay.agentStatus === "online" && isAuthenticated ? "#d4c0e8" : "rgba(255,255,255,0.15)",
                             fontSize: "0.72rem",
                             fontWeight: 500,
-                            cursor: relay.agentStatus === "online" ? "pointer" : "not-allowed",
+                            cursor: relay.agentStatus === "online" && isAuthenticated ? "pointer" : "not-allowed",
                             whiteSpace: "nowrap",
                             transition: "all 0.2s ease",
                         }}
@@ -233,25 +262,92 @@ export default function TerminalPage() {
                 <button
                     className="preset-btn"
                     onClick={() => newTerminal()}
-                    disabled={relay.agentStatus !== "online"}
+                    disabled={relay.agentStatus !== "online" || !isAuthenticated}
                     style={{
                         padding: "5px 12px",
                         borderRadius: "8px",
                         border: "1px solid rgba(0, 230, 118, 0.15)",
-                        background: relay.agentStatus === "online"
+                        background: relay.agentStatus === "online" && isAuthenticated
                             ? "rgba(0, 230, 118, 0.06)"
                             : "rgba(255,255,255,0.02)",
-                        color: relay.agentStatus === "online" ? "#90e8b8" : "rgba(255,255,255,0.15)",
+                        color: relay.agentStatus === "online" && isAuthenticated ? "#90e8b8" : "rgba(255,255,255,0.15)",
                         fontSize: "0.72rem",
                         fontWeight: 500,
-                        cursor: relay.agentStatus === "online" ? "pointer" : "not-allowed",
+                        cursor: relay.agentStatus === "online" && isAuthenticated ? "pointer" : "not-allowed",
                         whiteSpace: "nowrap",
                         transition: "all 0.2s ease",
                     }}
                 >
                     ➕ New Terminal
                 </button>
+
+                {/* ── Emergency Kill Divider ── */}
+                {isAuthenticated && relay.agentStatus === "online" && (
+                    <>
+                        <div style={{ width: "1px", height: "20px", background: "rgba(255,23,68,0.2)", margin: "0 6px" }} />
+                        <span style={{
+                            fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase",
+                            letterSpacing: "0.08em", color: "rgba(255,82,82,0.5)",
+                            marginRight: "2px",
+                        }}>🚨 Kill</span>
+
+                        <button
+                            className="kill-btn"
+                            title="Kill all open terminal sessions"
+                            disabled={killing !== null}
+                            onClick={handleKillAllTerminals}
+                            style={killBtnStyle("rgba(255,82,82,0.15)", "rgba(255,82,82,0.3)", killing === "terminals")}
+                        >
+                            {killing === "terminals" ? <span className="kill-spin">⏳</span> : "☠️"} Terminals
+                        </button>
+
+                        <button
+                            className="kill-btn"
+                            title="Kill Gazebo + RViz2 processes"
+                            disabled={killing !== null}
+                            onClick={() => handleKillRos("gazebo")}
+                            style={killBtnStyle("rgba(255,152,0,0.12)", "rgba(255,152,0,0.3)", killing === "gazebo")}
+                        >
+                            {killing === "gazebo" ? <span className="kill-spin">⏳</span> : "🤖"} Gazebo+RViz
+                        </button>
+
+                        <button
+                            className="kill-btn"
+                            title="Kill rosbridge WebSocket server"
+                            disabled={killing !== null}
+                            onClick={() => handleKillRos("rosbridge")}
+                            style={killBtnStyle("rgba(33,150,243,0.1)", "rgba(33,150,243,0.3)", killing === "rosbridge")}
+                        >
+                            {killing === "rosbridge" ? <span className="kill-spin">⏳</span> : "🌉"} Rosbridge
+                        </button>
+
+                        <button
+                            className="kill-btn"
+                            title="Kill ALL ROS processes (nuclear option)"
+                            disabled={killing !== null}
+                            onClick={() => handleKillRos("all")}
+                            style={killBtnStyle("rgba(244,67,54,0.18)", "rgba(244,67,54,0.4)", killing === "all")}
+                        >
+                            {killing === "all" ? <span className="kill-spin">⏳</span> : "💥"} Kill All ROS
+                        </button>
+                    </>
+                )}
             </div>
+
+            {/* ── Kill status toast ── */}
+            {killRosStatus && (
+                <div style={{
+                    padding: "6px 20px",
+                    background: killRosStatus.ok ? "rgba(0,230,118,0.08)" : "rgba(255,82,82,0.08)",
+                    borderBottom: `1px solid ${killRosStatus.ok ? "rgba(0,230,118,0.15)" : "rgba(255,82,82,0.15)"}`,
+                    color: killRosStatus.ok ? "#69f0ae" : "#ff5252",
+                    fontSize: "0.72rem",
+                    fontFamily: "'JetBrains Mono', monospace",
+                    flexShrink: 0,
+                }}>
+                    {killRosStatus.msg}
+                </div>
+            )}
 
             {/* ── Tab Bar ── */}
             {tabs.length > 0 && (
@@ -261,6 +357,7 @@ export default function TerminalPage() {
                     borderBottom: "1px solid rgba(155, 89, 182, 0.08)",
                     overflowX: "auto",
                     flexShrink: 0,
+                    alignItems: "center",
                 }}>
                     {tabs.map((tab) => (
                         <div
@@ -292,7 +389,7 @@ export default function TerminalPage() {
                                 flexShrink: 0,
                             }} />
                             {tab.label}
-                            {tab.alive && (
+                            {tab.alive && isAuthenticated && (
                                 <span
                                     className="close-btn"
                                     title="Stop command (Ctrl+C)"
@@ -310,6 +407,7 @@ export default function TerminalPage() {
                                     ⏹
                                 </span>
                             )}
+                            {isAuthenticated && (
                             <span
                                 className="close-btn"
                                 onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
@@ -324,8 +422,27 @@ export default function TerminalPage() {
                             >
                                 ×
                             </span>
+                            )}
                         </div>
                     ))}
+                    {isAuthenticated && (
+                        <div
+                            onClick={() => newTerminal()}
+                            style={{
+                                padding: "7px 12px",
+                                fontSize: "0.8rem",
+                                color: "rgba(155, 89, 182, 0.6)",
+                                cursor: "pointer",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                transition: "all 0.15s ease",
+                            }}
+                            title="New Terminal"
+                            onMouseOver={(e) => e.currentTarget.style.color = "rgba(155, 89, 182, 1)"}
+                            onMouseOut={(e) => e.currentTarget.style.color = "rgba(155, 89, 182, 0.6)"}
+                        >
+                            ➕
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -335,6 +452,7 @@ export default function TerminalPage() {
                     <EmptyState
                         agentStatus={relay.agentStatus}
                         onNewTerminal={() => newTerminal()}
+                        isAuthenticated={isAuthenticated}
                     />
                 ) : (
                     tabs.map((tab) => (
@@ -351,8 +469,9 @@ export default function TerminalPage() {
                                 terminalId={tab.id}
                                 relay={relay}
                                 isActive={activeTab === tab.id}
+                                readOnly={!isAuthenticated}
                             />
-                            {tab.alive && (
+                            {tab.alive && isAuthenticated && (
                                 <button
                                     className="stop-float"
                                     onClick={() => stopCommand(tab.id)}
@@ -368,6 +487,23 @@ export default function TerminalPage() {
     );
 }
 
+/* ── Kill button style helper ────────────────────────────── */
+function killBtnStyle(bg: string, border: string, active: boolean): React.CSSProperties {
+    return {
+        padding: "5px 11px",
+        borderRadius: "8px",
+        border: `1px solid ${border}`,
+        background: active ? border : bg,
+        color: active ? "#fff" : "rgba(255,200,200,0.8)",
+        fontSize: "0.72rem",
+        fontWeight: 600,
+        cursor: active ? "wait" : "pointer",
+        whiteSpace: "nowrap" as const,
+        transition: "all 0.2s ease",
+        opacity: active ? 0.7 : 1,
+    };
+}
+
 /* ═══════════════════════════════════════════════════
    XTERM VIEW — dynamically loads xterm.js
    ═══════════════════════════════════════════════════ */
@@ -375,10 +511,12 @@ function XTermView({
     terminalId,
     relay,
     isActive,
+    readOnly = false,
 }: {
     terminalId: string;
     relay: ReturnType<typeof useRelay>;
     isActive: boolean;
+    readOnly?: boolean;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const termRef = useRef<unknown>(null);
@@ -409,10 +547,10 @@ function XTermView({
                     cursorStyle: "bar",
                     fontSize: 13,
                     fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-                    lineHeight: 1.15,
-                    letterSpacing: 0.3,
+                    lineHeight: 1.2,
+                    letterSpacing: 0.5,
                     theme: {
-                        background: "#0a0a0a",
+                        background: "transparent",
                         foreground: "#e0e0e0",
                         cursor: "#9b59b6",
                         cursorAccent: "#0a0a0a",
@@ -448,14 +586,25 @@ function XTermView({
                 fitAddonRef.current = fitAddon;
                 setLoaded(true);
 
-                // Send input to agent
-                term.onData((data: string) => {
-                    relay.sendInput(terminalId, data);
-                });
+                // Send input to agent (only if not readOnly)
+                if (!readOnly) {
+                    term.onData((data: string) => {
+                        relay.sendInput(terminalId, data);
+                    });
+                }
 
                 // Receive output from agent
                 relay.onTerminalOutput(terminalId, (data: string) => {
                     term.write(data);
+                });
+
+                // Request scrollback replay for recovered terminals
+                relay.getScrollback(terminalId, (data: string | null) => {
+                    if (data && data.length > 0) {
+                        term.write("\x1b[90m\r\n--- Session recovered — replaying last output ---\x1b[0m\r\n");
+                        term.write(data);
+                        term.write("\x1b[90m\r\n--- Live — type or press Enter to continue ---\x1b[0m\r\n");
+                    }
                 });
 
                 // Handle terminal exit
@@ -513,15 +662,29 @@ function XTermView({
 
     return (
         <div
-            ref={containerRef}
             style={{
                 flex: 1,
-                padding: "8px 4px 0 8px",
-                paddingBottom: "clamp(60px, 8vw, 130px)", /* 4 lines mobile, ~10 lines desktop */
+                padding: "16px 20px 24px 20px",
                 background: "#0a0a0a",
+                display: "flex",
+                flexDirection: "column",
                 overflow: "hidden",
             }}
-        />
+        >
+            <div style={{
+                flex: 1,
+                background: "#0c0a12",
+                borderRadius: "12px",
+                border: "1px solid rgba(155, 89, 182, 0.15)",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(155, 89, 182, 0.04)",
+                padding: "14px 16px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+            }}>
+                <div ref={containerRef} style={{ flex: 1, overflow: "hidden" }} />
+            </div>
+        </div>
     );
 }
 
@@ -564,9 +727,11 @@ function AgentBadge({ status }: { status: string }) {
 function EmptyState({
     agentStatus,
     onNewTerminal,
+    isAuthenticated,
 }: {
     agentStatus: string;
     onNewTerminal: () => void;
+    isAuthenticated: boolean;
 }) {
     return (
         <div style={{
@@ -591,19 +756,23 @@ function EmptyState({
                     <button
                         onClick={onNewTerminal}
                         className="preset-btn"
+                        disabled={!isAuthenticated}
+                        title={isAuthenticated ? "Open Terminal" : "Login required"}
                         style={{
                             padding: "8px 22px",
                             borderRadius: "10px",
                             border: "none",
-                            background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-                            color: "#fff",
+                            background: isAuthenticated
+                                ? "linear-gradient(135deg, var(--primary), var(--secondary))"
+                                : "rgba(255,255,255,0.05)",
+                            color: isAuthenticated ? "#fff" : "rgba(255,255,255,0.2)",
                             fontSize: "0.85rem",
                             fontWeight: 600,
-                            cursor: "pointer",
+                            cursor: isAuthenticated ? "pointer" : "not-allowed",
                             transition: "all 0.2s ease",
                         }}
                     >
-                        ➕ Open Terminal
+                        {isAuthenticated ? "➕ Open Terminal" : "🔒 Login Required"}
                     </button>
                 </>
             ) : agentStatus === "connecting" ? (

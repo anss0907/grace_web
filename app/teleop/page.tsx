@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useROS } from "../lib/useROS";
+import { useAuth } from "../components/AuthProvider";
 import * as ROSLIB from "roslib";
 import MapCanvas from "../components/MapCanvas";
 
@@ -25,6 +26,7 @@ const PUBLISH_RATE = 10;  // Hz
 
 export default function TeleopPage() {
     const { ros, status } = useROS();
+    const { isAuthenticated } = useAuth();
     const isMobile = useIsMobile();
 
     // Joystick state
@@ -48,9 +50,9 @@ export default function TeleopPage() {
         latestJoy.current = { x: joyX, y: joyY };
     }, [joyX, joyY]);
 
-    // Publish Twist at fixed rate
+    // Publish Twist at fixed rate (only if authenticated)
     useEffect(() => {
-        if (!ros || status !== "connected") return;
+        if (!ros || status !== "connected" || !isAuthenticated) return;
 
         const cmdTopic = new ROSLIB.Topic({
             ros,
@@ -74,7 +76,7 @@ export default function TeleopPage() {
                 angular: { x: 0, y: 0, z: 0 },
             });
         };
-    }, [ros, status]);
+    }, [ros, status, isAuthenticated]);
 
     // Subscribe to motor commands
     useEffect(() => {
@@ -139,19 +141,20 @@ export default function TeleopPage() {
     }, []);
 
     const onPointerDown = useCallback((e: React.PointerEvent) => {
+        if (!isAuthenticated) return;
         isDragging.current = true;
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
         const pos = getJoyPosition(e.clientX, e.clientY);
         setJoyX(pos.x);
         setJoyY(pos.y);
-    }, [getJoyPosition]);
+    }, [getJoyPosition, isAuthenticated]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
-        if (!isDragging.current) return;
+        if (!isDragging.current || !isAuthenticated) return;
         const pos = getJoyPosition(e.clientX, e.clientY);
         setJoyX(pos.x);
         setJoyY(pos.y);
-    }, [getJoyPosition]);
+    }, [getJoyPosition, isAuthenticated]);
 
     const onPointerUp = useCallback(() => {
         isDragging.current = false;
@@ -274,6 +277,26 @@ export default function TeleopPage() {
                                 cursor: "grab",
                             }} />
                         </div>
+
+                        {/* Lock overlay when not authenticated */}
+                        {!isAuthenticated && (
+                            <div style={{
+                                position: "absolute", inset: 0,
+                                borderRadius: "50%",
+                                background: "rgba(10, 8, 20, 0.75)",
+                                backdropFilter: "blur(3px)",
+                                display: "flex", flexDirection: "column",
+                                alignItems: "center", justifyContent: "center",
+                                gap: "6px", zIndex: 5,
+                            }}>
+                                <span style={{ fontSize: "1.5rem" }}>🔒</span>
+                                <span style={{
+                                    fontSize: "0.65rem", fontWeight: 600,
+                                    color: "rgba(255,255,255,0.4)",
+                                    textAlign: "center", padding: "0 20px",
+                                }}>Login to control</span>
+                            </div>
+                        )}
 
                         {/* Velocity readout (compact) */}
                         <div style={{ display: "flex", gap: "20px", textAlign: "center" }}>

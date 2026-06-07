@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import ScrollToTop from "./components/ScrollToTop";
 import MobileNav from "./components/MobileNav";
+import { AuthWrapper, NavbarAuth } from "./components/AuthWrapper";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <AuthWrapper>
         <ScrollToTop />
         {/* ========== NAVBAR ========== */}
         <nav className="navbar">
@@ -65,6 +67,9 @@ export default function RootLayout({
               <Link href="/viz">Visualization</Link>
             </li>
           </ul>
+
+          {/* Admin login/logout */}
+          <NavbarAuth />
 
           {/* Mobile nav (hamburger + drawer) */}
           <MobileNav />
@@ -141,6 +146,7 @@ export default function RootLayout({
             </span>
           </div>
         </footer>
+        </AuthWrapper>
       </body>
     </html>
   );

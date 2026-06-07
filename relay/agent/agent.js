@@ -51,7 +51,8 @@ if (!RELAY_URL || !AGENT_TOKEN) {
 }
 
 /* ── State ────────────────────────────────────────── */
-const terminals = new Map(); // id → { pty, label, command, createdAt }
+const terminals = new Map(); // id → { pty, label, command, createdAt, scrollback }
+const SCROLLBACK_LIMIT = 500; // lines per terminal
 let ws = null;
 let reconnectDelay = 1000;
 const MAX_RECONNECT_DELAY = 30000;
@@ -128,6 +129,18 @@ function handleMessage(msg) {
             killTerminal(msg.id);
             break;
 
+        case "kill_all_terminals":
+            killAllTerminals();
+            break;
+
+        case "kill_ros":
+            killRosProcesses(msg.target || "all");
+            break;
+
+        case "get_scrollback":
+            sendScrollback(msg.id);
+            break;
+
         case "list_terminals":
             sendTerminalList();
             break;
@@ -183,10 +196,20 @@ function createTerminal(id, label) {
         label,
         command: null,
         createdAt: Date.now(),
+        scrollback: [], // ring buffer of output strings
     });
 
-    // Stream output to client
+    // Stream output to client + store in scrollback buffer
     ptyProcess.onData((data) => {
+        // Append to scrollback buffer (split by newline to count lines)
+        const term = terminals.get(id);
+        if (term) {
+            term.scrollback.push(data);
+            // Trim to last SCROLLBACK_LIMIT entries
+            if (term.scrollback.length > SCROLLBACK_LIMIT) {
+                term.scrollback.splice(0, term.scrollback.length - SCROLLBACK_LIMIT);
+            }
+        }
         send({
             type: "terminal_output",
             id,
@@ -279,6 +302,90 @@ function killTerminal(id) {
         signal: "SIGKILL",
     });
     sendTerminalList();
+}
+
+function killAllTerminals() {
+    console.log(`💀 Killing all ${terminals.size} terminal(s)`);
+    logCommand("KILL_ALL_TERMINALS", `count=${terminals.size}`);
+    const ids = [...terminals.keys()];
+    ids.forEach((id) => killTerminal(id));
+    send({ type: "kill_all_done", killed: ids.length });
+}
+
+function killRosProcesses(target) {
+    const { exec } = require("child_process");
+
+    const targets = {
+        all: [
+            "pkill -SIGINT -f 'ros2 launch' 2>/dev/null || true",
+            "sleep 1",
+            "pkill -9 -f 'ros2 launch' 2>/dev/null || true",
+            "pkill -9 -f 'gzserver' 2>/dev/null || true",
+            "pkill -9 -f 'gzclient' 2>/dev/null || true",
+            "pkill -9 -f 'gz sim' 2>/dev/null || true",
+            "pkill -9 -f 'ign gazebo' 2>/dev/null || true",
+            "pkill -9 -f 'gazebo' 2>/dev/null || true",
+            "pkill -9 -f 'ign' 2>/dev/null || true",
+            "killall -9 ign 2>/dev/null || true",
+            "pkill -9 -f 'ruby.*ign' 2>/dev/null || true",
+            "killall -9 ruby 2>/dev/null || true",
+            "pkill -9 -f 'rviz2' 2>/dev/null || true",
+            "pkill -9 -f 'rosbridge_websocket' 2>/dev/null || true",
+            "pkill -9 -f 'ros2_web_bridge' 2>/dev/null || true",
+            "killall -9 python3 2>/dev/null || true",
+            "pkill -9 -f ros 2>/dev/null || true",
+        ].join(" && "),
+        gazebo: [
+            "pkill -SIGINT -f 'grace_bringup' 2>/dev/null || true",
+            "sleep 1",
+            "pkill -9 -f 'grace_bringup' 2>/dev/null || true",
+            "pkill -9 -f 'gzserver' 2>/dev/null || true",
+            "pkill -9 -f 'gzclient' 2>/dev/null || true",
+            "pkill -9 -f 'gz sim' 2>/dev/null || true",
+            "pkill -9 -f 'ign gazebo' 2>/dev/null || true",
+            "pkill -9 -f 'gazebo' 2>/dev/null || true",
+            "pkill -9 -f 'ign' 2>/dev/null || true",
+            "killall -9 ign 2>/dev/null || true",
+            "pkill -9 -f 'ruby.*ign' 2>/dev/null || true",
+            "killall -9 ruby 2>/dev/null || true",
+            "pkill -9 -f 'rviz2' 2>/dev/null || true",
+        ].join(" && "),
+        rosbridge: [
+            "pkill -9 -f 'rosbridge_websocket' 2>/dev/null || true",
+            "pkill -9 -f 'ros2_web_bridge' 2>/dev/null || true",
+        ].join(" && "),
+    };
+
+    const cmd = targets[target] || targets.all;
+    console.log(`☠️  Killing ROS processes [target=${target}]: ${cmd}`);
+    logCommand("KILL_ROS", `target=${target}`);
+
+    exec(cmd, { shell: "/bin/bash" }, (err, stdout, stderr) => {
+        const success = !err || err.code === 1; // pkill returns 1 if no processes matched
+        console.log(`☠️  Kill result: ${success ? "OK" : "Error"}`);
+        if (stderr) console.error("stderr:", stderr.trim());
+        send({
+            type: "kill_ros_done",
+            target,
+            success,
+            message: success
+                ? `✅ ROS processes killed [${target}]`
+                : `⚠️ Some processes may not have been killed`,
+        });
+    });
+}
+
+function sendScrollback(id) {
+    const term = terminals.get(id);
+    if (!term) {
+        send({ type: "scrollback", id, data: null });
+        return;
+    }
+    send({
+        type: "scrollback",
+        id,
+        data: term.scrollback.join(""),
+    });
 }
 
 /* ── Status & Info ────────────────────────────────── */
