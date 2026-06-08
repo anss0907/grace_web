@@ -160,6 +160,8 @@ export default function VizPage() {
   const [data, setData] = useState<any[]>([])
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [healthData, setHealthData] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [nanoData, setNanoData] = useState<any[]>([])
   const [live, setLive] = useState(true)
 
   useEffect(() => {
@@ -173,11 +175,17 @@ export default function VizPage() {
         .from('health_vitals').select('*').order('ts', { ascending: false }).limit(80)
       if (initialHealth) setHealthData(initialHealth.reverse())
     }
+    const fetchNanoData = async () => {
+      const { data: initialNano } = await supabase
+        .from('arduino_nano_data').select('*').order('ts', { ascending: false }).limit(80)
+      if (initialNano) setNanoData(initialNano.reverse())
+    }
     fetchInitialData()
     fetchHealthData()
+    fetchNanoData()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let sub: any, healthSub: any
+    let sub: any, healthSub: any, nanoSub: any
     if (live) {
       sub = supabase.channel('esp32_live')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'esp32_data' }, p => {
@@ -187,10 +195,15 @@ export default function VizPage() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'health_vitals' }, p => {
           setHealthData(c => { const n = [...c, p.new]; return n.length > 80 ? n.slice(-80) : n })
         }).subscribe()
+      nanoSub = supabase.channel('nano_live')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'arduino_nano_data' }, p => {
+          setNanoData(c => { const n = [...c, p.new]; return n.length > 80 ? n.slice(-80) : n })
+        }).subscribe()
     }
     return () => {
       if (sub) supabase.removeChannel(sub)
       if (healthSub) supabase.removeChannel(healthSub)
+      if (nanoSub) supabase.removeChannel(nanoSub)
     }
   }, [live])
 
@@ -203,6 +216,7 @@ export default function VizPage() {
 
   const latest = data[data.length - 1] || {}
   const latestH = healthData[healthData.length - 1] || {}
+  const latestN = nanoData[nanoData.length - 1] || {}
 
   return (
     <div style={styles.page}>
@@ -398,6 +412,96 @@ export default function VizPage() {
             </div>
           ) : (
             <p style={styles.empty}>⏳ Waiting for health vitals...</p>
+          )}
+        </div>
+
+        {/* ═══════════ POWER & GAS SECTION ═══════════ */}
+        <div>
+          <div style={sectionLabelStyle('#fb923c')}>
+            <span>⚡</span>
+            <span>Power &amp; Gas Monitor — Arduino Nano</span>
+            <div style={sectionDividerStyle('#fb923c')} />
+          </div>
+
+          {/* KPIs */}
+          <div style={styles.kpiRow}>
+            <KpiCard accent="#3b82f6" label="Battery 24V"   value={`${latestN.battery_24v_v?.toFixed(2) ?? '--'} V`} />
+            <KpiCard accent="#06b6d4" label="Buck 19V"      value={`${latestN.buck_19v_v?.toFixed(2)    ?? '--'} V`} />
+            <KpiCard accent="#f59e0b" label="Batt 40V I"   value={`${latestN.battery_40v_a?.toFixed(2) ?? '--'} A`} />
+            <KpiCard accent="#fb923c" label="Batt 24V I"   value={`${latestN.battery_24v_a?.toFixed(2) ?? '--'} A`} />
+            <KpiCard accent="#a855f7" label="Charger 40V"  value={`${latestN.charger_40v_a?.toFixed(2) ?? '--'} A`} />
+            <KpiCard accent="#ec4899" label="Charger 24V"  value={`${latestN.charger_24v_a?.toFixed(2) ?? '--'} A`} />
+            <KpiCard accent="#22c55e" label="MQ Ratio"     value={`${latestN.mq_ratio?.toFixed(3)     ?? '--'}`} />
+            <KpiCard accent="#84cc16" label="MHMQ Ratio"   value={`${latestN.mhmq_ratio?.toFixed(3)   ?? '--'}`} />
+          </div>
+
+          {/* Charts */}
+          {nanoData.length > 0 ? (
+            <div style={styles.chartsGrid}>
+
+              <div style={styles.chartCard}>
+                <p style={styles.chartTitle}>🔋 Battery Voltages (V)</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={nanoData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+                    <Line type="monotone" dataKey="battery_24v_v" name="Battery 24V (V)" stroke="#3b82f6" dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="buck_19v_v"    name="Buck 19V (V)"    stroke="#06b6d4" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div style={styles.chartCard}>
+                <p style={styles.chartTitle}>⚡ Discharge Currents (A)</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={nanoData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+                    <Line type="monotone" dataKey="battery_40v_a" name="Batt 40V (A)" stroke="#f59e0b" dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="battery_24v_a" name="Batt 24V (A)" stroke="#fb923c" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div style={styles.chartCard}>
+                <p style={styles.chartTitle}>🔌 Charger Currents (A)</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={nanoData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+                    <Line type="monotone" dataKey="charger_40v_a" name="Charger 40V (A)" stroke="#a855f7" dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="charger_24v_a" name="Charger 24V (A)" stroke="#ec4899" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div style={styles.chartCard}>
+                <p style={styles.chartTitle}>🧪 Gas Sensor Ratios (MQ)</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={nanoData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AXIS_STYLE} />
+                    <YAxis {...AXIS_STYLE} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+                    <Line type="monotone" dataKey="mq_ratio"   name="MQ Ratio"   stroke="#22c55e" dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="mhmq_ratio" name="MHMQ Ratio" stroke="#84cc16" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+            </div>
+          ) : (
+            <p style={styles.empty}>⏳ Waiting for Arduino Nano data...</p>
           )}
         </div>
 
