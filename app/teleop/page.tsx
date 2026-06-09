@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useROS } from "../lib/useROS";
 import { useAuth } from "../components/AuthProvider";
 import { useLAN } from "../components/LANProvider";
+import { supabase } from "../lib/supabase";
 import * as ROSLIB from "roslib";
 import MapCanvas from "../components/MapCanvas";
 import CameraStream from "../components/CameraStream";
@@ -43,6 +44,22 @@ export default function TeleopPage() {
 
     // Joint state monitoring (joint_states)
     const [jointVel, setJointVel] = useState<{ left: number; right: number } | null>(null);
+
+    // Waypoints state
+    const [waypoints, setWaypoints] = useState<any[]>([]);
+    const [pendingWaypoint, setPendingWaypoint] = useState<{ x: number; y: number; theta: number } | null>(null);
+    const [newWaypointName, setNewWaypointName] = useState("");
+    const [isSavingWaypoint, setIsSavingWaypoint] = useState(false);
+    const currentPoseRef = useRef<{ x: number; y: number; yaw: number } | null>(null);
+
+    const fetchWaypoints = useCallback(async () => {
+        const { data } = await supabase.from('waypoints').select('*').order('created_at', { ascending: true });
+        if (data) setWaypoints(data);
+    }, []);
+
+    useEffect(() => {
+        fetchWaypoints();
+    }, [fetchWaypoints]);
 
     // Publish timer ref
     const publishTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -121,6 +138,74 @@ export default function TeleopPage() {
 
         return () => { jointTopic.unsubscribe(); };
     }, [ros, status]);
+
+    // Subscribe to amcl_pose for Waypoints
+    useEffect(() => {
+        if (!ros || status !== "connected") return;
+
+        const poseTopic = new ROSLIB.Topic({
+            ros,
+            name: "/amcl_pose",
+            messageType: "geometry_msgs/PoseWithCovarianceStamped",
+        });
+
+        poseTopic.subscribe((msg: any) => {
+            const p = msg.pose.pose;
+            const q = p.orientation;
+            const yaw = 2 * Math.atan2(q.z, q.w);
+            currentPoseRef.current = { x: p.position.x, y: p.position.y, yaw };
+        });
+
+        return () => { poseTopic.unsubscribe(); };
+    }, [ros, status]);
+
+    // ── Waypoint Handlers ──────────────────────────────
+
+    const handlePrepareSave = () => {
+        if (!currentPoseRef.current) {
+            alert("No pose data received yet. Are AMCL and the robot running?");
+            return;
+        }
+        setPendingWaypoint({
+            x: currentPoseRef.current.x,
+            y: currentPoseRef.current.y,
+            theta: currentPoseRef.current.yaw
+        });
+    };
+
+    const handleSaveWaypoint = async () => {
+        if (!pendingWaypoint || !newWaypointName.trim()) return;
+        setIsSavingWaypoint(true);
+        const { error } = await supabase.from('waypoints').insert([{
+            name: newWaypointName.trim(),
+            x: pendingWaypoint.x,
+            y: pendingWaypoint.y,
+            theta: pendingWaypoint.theta
+        }]);
+        if (!error) {
+            setNewWaypointName("");
+            setPendingWaypoint(null);
+            fetchWaypoints();
+        }
+        setIsSavingWaypoint(false);
+    };
+
+    const handleDeleteWaypoint = async (id: string) => {
+        await supabase.from('waypoints').delete().eq('id', id);
+        fetchWaypoints();
+    };
+
+    const handleGoToWaypoint = (wp: any) => {
+        if (!ros || status !== "connected") return;
+        const goalTopic = new ROSLIB.Topic({ ros, name: "/goal_pose", messageType: "geometry_msgs/PoseStamped" });
+        goalTopic.publish({
+            header: { frame_id: "map", stamp: { sec: 0, nanosec: 0 } },
+            pose: { 
+                position: { x: wp.x, y: wp.y, z: 0 }, 
+                orientation: { x: 0, y: 0, z: Math.sin(wp.theta / 2), w: Math.cos(wp.theta / 2) } 
+            },
+        });
+    };
 
     // ── Joystick pointer handlers ──────────────────────────
 
@@ -364,6 +449,99 @@ export default function TeleopPage() {
                                 {status === "connected" ? "Waiting…" : "Not connected"}
                             </div>
                         )}
+                    </div>
+
+                    {/* Saved Locations / Waypoints */}
+                    <div className="glass-card" style={{ padding: "12px" }}>
+                        <h3 style={{ margin: "0 0 10px", fontSize: "0.85rem", opacity: 0.8 }}>📍 Saved Locations</h3>
+                        
+                        {!pendingWaypoint ? (
+                            <button
+                                onClick={handlePrepareSave}
+                                style={{
+                                    width: "100%", padding: "8px", borderRadius: "6px",
+                                    background: "rgba(0, 230, 118, 0.15)", border: "1px solid rgba(0, 230, 118, 0.3)",
+                                    color: "#00e676", cursor: "pointer",
+                                    fontSize: "0.75rem", fontWeight: 600, marginBottom: "12px"
+                                }}
+                            >
+                                + Save Current Location
+                            </button>
+                        ) : (
+                            <div style={{ background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "8px", marginBottom: "12px" }}>
+                                <div style={{ fontSize: "0.6rem", opacity: 0.6, fontFamily: "monospace", marginBottom: "6px" }}>
+                                    X: {pendingWaypoint.x.toFixed(2)} | Y: {pendingWaypoint.y.toFixed(2)} | θ: {pendingWaypoint.theta.toFixed(2)}
+                                </div>
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Location Name (e.g. Kitchen)"
+                                        value={newWaypointName}
+                                        onChange={(e) => setNewWaypointName(e.target.value)}
+                                        style={{
+                                            flex: 1, padding: "6px 8px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.2)",
+                                            background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "0.75rem"
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleSaveWaypoint}
+                                        disabled={isSavingWaypoint || !newWaypointName.trim()}
+                                        style={{
+                                            padding: "6px 12px", borderRadius: "4px", background: "#00e676", color: "#000",
+                                            fontWeight: "bold", fontSize: "0.75rem", cursor: newWaypointName.trim() ? "pointer" : "not-allowed"
+                                        }}
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={() => setPendingWaypoint(null)}
+                                        style={{
+                                            padding: "6px", borderRadius: "4px", background: "rgba(255,23,68,0.2)", color: "#ff5252",
+                                            border: "1px solid rgba(255,23,68,0.4)", cursor: "pointer"
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+                            {waypoints.length === 0 ? (
+                                <div style={{ textAlign: "center", opacity: 0.3, padding: "8px", fontSize: "0.7rem" }}>No locations saved yet</div>
+                            ) : (
+                                waypoints.map(wp => (
+                                    <div key={wp.id} style={{
+                                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                                        background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                                        padding: "6px 10px", borderRadius: "6px"
+                                    }}>
+                                        <button
+                                            onClick={() => handleGoToWaypoint(wp)}
+                                            style={{
+                                                flex: 1, textAlign: "left", background: "transparent", border: "none", color: "#fff",
+                                                cursor: "pointer", display: "flex", flexDirection: "column", gap: "2px"
+                                            }}
+                                        >
+                                            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#9b59b6" }}>{wp.name}</span>
+                                            <span style={{ fontSize: "0.55rem", opacity: 0.5, fontFamily: "monospace" }}>
+                                                {wp.x.toFixed(1)}, {wp.y.toFixed(1)}, {wp.theta.toFixed(1)} rad
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteWaypoint(wp.id)}
+                                            style={{
+                                                background: "transparent", border: "none", color: "rgba(255,23,68,0.7)", cursor: "pointer",
+                                                padding: "4px", fontSize: "0.9rem"
+                                            }}
+                                            title="Delete Location"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
