@@ -53,11 +53,16 @@ export default function CameraStream({ topic = "/camera/camera/color/image_raw" 
     <div style={{
       position: "relative",
       width: "100%",
+      height: "40vh",
+      minHeight: "250px",
+      maxHeight: "400px",
       background: "#000",
       borderRadius: "12px",
       overflow: "hidden",
       border: "1px solid rgba(155, 89, 182, 0.2)",
       boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+      display: "flex",
+      flexDirection: "column",
     }}>
       {/* Top Overlay Bar */}
       <div style={{
@@ -98,12 +103,12 @@ export default function CameraStream({ topic = "/camera/camera/color/image_raw" 
       </div>
 
       {/* Stream Image */}
-      <div style={{ width: "100%", minHeight: "300px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", marginTop: "40px" }}>
         {streamUrl ? (
           <img
             src={streamUrl}
             alt="Robot Camera Stream"
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block", position: "absolute" }}
             onError={(e) => {
               // Hide broken image icon on error
               e.currentTarget.style.display = 'none';

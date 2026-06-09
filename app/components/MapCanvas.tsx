@@ -224,12 +224,52 @@ export default function MapCanvas({
             if (!hasAutocentered.current && canvasRef.current) {
                 hasAutocentered.current = true;
                 const canvas = canvasRef.current;
-                const s = Math.min(canvas.width / msg.info.width, canvas.height / msg.info.height) * 0.9;
-                viewScale.current = s;
-                viewOffset.current = {
-                    x: (canvas.width - msg.info.width * s) / 2,
-                    y: (canvas.height - msg.info.height * s) / 2,
-                };
+                const rect = canvas.parentElement?.getBoundingClientRect();
+                const cw = rect ? rect.width : canvas.width;
+                const ch = rect ? rect.height : canvas.height;
+
+                // Find bounding box of known space in ImageData coordinates
+                let minX = msg.info.width, maxX = 0, minY = msg.info.height, maxY = 0;
+                let found = false;
+                for (let row = 0; row < msg.info.height; row++) {
+                    const dstRow = msg.info.height - 1 - row;
+                    for (let col = 0; col < msg.info.width; col++) {
+                        const val = msg.data[row * msg.info.width + col];
+                        if (val !== -1) {
+                            if (col < minX) minX = col;
+                            if (col > maxX) maxX = col;
+                            if (dstRow < minY) minY = dstRow;
+                            if (dstRow > maxY) maxY = dstRow;
+                            found = true;
+                        }
+                    }
+                }
+
+                if (found && maxX > minX && maxY > minY) {
+                    const knownWidth = maxX - minX;
+                    const knownHeight = maxY - minY;
+                    const padX = knownWidth * 0.15;
+                    const padY = knownHeight * 0.15;
+                    const targetW = knownWidth + padX * 2;
+                    const targetH = knownHeight + padY * 2;
+
+                    const s = Math.min(cw / targetW, ch / targetH);
+                    viewScale.current = s;
+                    
+                    const centerX = (minX + maxX) / 2;
+                    const centerY = (minY + maxY) / 2;
+                    viewOffset.current = {
+                        x: cw / 2 - centerX * s,
+                        y: ch / 2 - centerY * s,
+                    };
+                } else {
+                    const s = Math.min(cw / msg.info.width, ch / msg.info.height) * 0.9;
+                    viewScale.current = s;
+                    viewOffset.current = {
+                        x: (cw - msg.info.width * s) / 2,
+                        y: (ch - msg.info.height * s) / 2,
+                    };
+                }
             }
         });
 
