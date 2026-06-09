@@ -16,6 +16,10 @@ export default function TelemetryPage() {
     const [publishCount, setPublishCount] = useState(0);
     const [lastPublished, setLastPublished] = useState<string | null>(null);
 
+    // Speech state
+    const [isListening, setIsListening] = useState(false);
+    const [ttsEnabled, setTtsEnabled] = useState(true);
+
     useEffect(() => {
         if (!ros || status !== "connected") return;
 
@@ -26,9 +30,36 @@ export default function TelemetryPage() {
         });
 
         topic.subscribe((message) => {
-            setLastMessage((message as { data: string }).data);
+            const data = (message as { data: string }).data;
+            setLastMessage(data);
             setLastTimestamp(new Date().toLocaleTimeString());
             setMsgCount((prev) => prev + 1);
+            
+            // Speak it if TTS is enabled
+            if (ttsEnabled) {
+                if ("speechSynthesis" in window) {
+                    // Only cancel if it's currently speaking a long message to avoid
+                    // halting the speech daemon and causing a 2-second cold start delay.
+                    if (window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                    
+                    const utterance = new SpeechSynthesisUtterance(data);
+                    
+                    // Grab voices quickly (if already loaded) without heavy filtering
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        const bestVoice = voices.find(v => v.name.includes("Female") || v.name.includes("female") || v.lang === "en-GB");
+                        if (bestVoice) utterance.voice = bestVoice;
+                    }
+                    
+                    // Tweak for a friendlier, more natural vibe
+                    utterance.pitch = 1.2; 
+                    utterance.rate = 1.0; // Restored to normal speed to reduce processing lag
+                    
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
         });
 
         listenerRef.current = topic;
@@ -37,10 +68,11 @@ export default function TelemetryPage() {
             topic.unsubscribe();
             listenerRef.current = null;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ros, status]);
 
-    function handlePublish() {
-        if (!ros || status !== "connected" || !publishInput.trim()) return;
+    function publishMessage(text: string) {
+        if (!ros || status !== "connected" || !text.trim()) return;
 
         const topic = new ROSLIB.Topic({
             ros,
@@ -48,11 +80,49 @@ export default function TelemetryPage() {
             messageType: "std_msgs/msg/String",
         });
 
-        topic.publish({ data: publishInput.trim() });
+        topic.publish({ data: text.trim() });
 
-        setLastPublished(publishInput.trim());
+        setLastPublished(text.trim());
         setPublishCount((prev) => prev + 1);
         setPublishInput("");
+    }
+
+    function handlePublish() {
+        publishMessage(publishInput);
+    }
+
+    function startSpeechToText() {
+        if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+            alert("Speech Recognition is not supported in this browser.");
+            return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        recognition.onstart = () => setIsListening(true);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setPublishInput(transcript);
+            publishMessage(transcript); // Auto-publish once heard
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
+        };
+
+        recognition.onend = () => setIsListening(false);
+
+        recognition.start();
     }
 
     return (
@@ -141,9 +211,27 @@ export default function TelemetryPage() {
                                 /chatter
                             </code>
                         </h3>
-                        <span style={{ fontSize: "0.8rem", opacity: 0.5 }}>
-                            {msgCount} received
-                        </span>
+                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                            <button
+                                onClick={() => setTtsEnabled(!ttsEnabled)}
+                                style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "8px",
+                                    border: `1px solid ${ttsEnabled ? "var(--primary)" : "rgba(98, 78, 199, 0.3)"}`,
+                                    background: ttsEnabled ? "rgba(98, 78, 199, 0.15)" : "transparent",
+                                    color: ttsEnabled ? "var(--primary)" : "var(--text-primary)",
+                                    fontSize: "0.8rem",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                }}
+                                title="Toggle Text-to-Speech"
+                            >
+                                {ttsEnabled ? "🔊 Auto-Speak ON" : "🔇 Auto-Speak OFF"}
+                            </button>
+                            <span style={{ fontSize: "0.8rem", opacity: 0.5 }}>
+                                {msgCount} received
+                            </span>
+                        </div>
                     </div>
 
                     {lastMessage !== null ? (
@@ -221,6 +309,27 @@ export default function TelemetryPage() {
                             onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                             onBlur={(e) => (e.target.style.borderColor = "rgba(98, 78, 199, 0.2)")}
                         />
+                        <button
+                            onClick={startSpeechToText}
+                            disabled={status !== "connected" || isListening}
+                            style={{
+                                padding: "12px",
+                                borderRadius: "12px",
+                                border: "none",
+                                background: isListening ? "#ff1744" : "rgba(98, 78, 199, 0.15)",
+                                color: isListening ? "#fff" : "var(--primary)",
+                                cursor: status === "connected" ? "pointer" : "not-allowed",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "1.2rem",
+                                animation: isListening ? "pulseGlow 1.5s infinite" : "none"
+                            }}
+                            title="Speak to publish"
+                        >
+                            {isListening ? "🎙️" : "🎤"}
+                        </button>
                         <button
                             onClick={handlePublish}
                             disabled={status !== "connected" || !publishInput.trim()}
