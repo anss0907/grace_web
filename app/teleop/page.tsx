@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useROS } from "../lib/useROS";
 import { useAuth } from "../components/AuthProvider";
+import { useLAN } from "../components/LANProvider";
 import * as ROSLIB from "roslib";
 import MapCanvas from "../components/MapCanvas";
 import CameraStream from "../components/CameraStream";
@@ -28,6 +29,7 @@ const PUBLISH_RATE = 10;  // Hz
 export default function TeleopPage() {
     const { ros, status } = useROS();
     const { isAuthenticated } = useAuth();
+    const { isLanMode } = useLAN();
     const isMobile = useIsMobile();
 
     // Joystick state
@@ -189,7 +191,7 @@ export default function TeleopPage() {
                         boxShadow: `0 0 10px ${status === "connected" ? "#00e676" : status === "connecting" ? "#ffab00" : "#ff1744"}`,
                     }} />
                     <span style={{ fontSize: "0.7rem", opacity: 0.4, fontFamily: "monospace" }}>
-                        {status === "connected" ? "rosbridge connected" : status}
+                        {status === "connected" ? `connected via ${isLanMode ? 'LAN' : 'Ngrok'}` : status}
                     </span>
                 </div>
                 <span style={{ fontSize: "0.65rem", opacity: 0.3, fontFamily: "monospace" }}>

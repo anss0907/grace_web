@@ -81,7 +81,7 @@ export default function CameraStream({ topic = "/camera/camera/color/image_raw" 
             </span>
           )}
         </div>
-        
+
         <button
           onClick={toggleStream}
           style={{

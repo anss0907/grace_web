@@ -53,7 +53,7 @@ export default function LANSettings() {
         }}
         title={isLanMode ? "Switch to Internet Mode" : "Connect to LAN"}
       >
-        {isLanMode ? "LAN Connected" : "Connect LAN"}
+        {isLanMode ? "LAN Mode Enabled" : "Connect LAN"}
       </button>
     </div>
   );
