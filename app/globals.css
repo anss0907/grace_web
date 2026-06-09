@@ -9,9 +9,9 @@
 /* --- Design Tokens --- */
 :root {
   /* Primary Palette */
-  --grace-primary: #9B59B6;
-  --grace-primary-light: #C39BD3;
-  --grace-primary-dark: #6C3483;
+  --grace-primary: #624ec7;
+  --grace-primary-light: #8B7BD4;
+  --grace-primary-dark: #4A3A96;
 
   /* Accent Palette */
   --grace-accent: #E91E63;
@@ -19,24 +19,24 @@
   --grace-rose-gold: #B76E79;
 
   /* Backgrounds */
-  --grace-bg-dark: #0D0618;
-  --grace-bg-card: rgba(155, 89, 182, 0.06);
-  --grace-bg-card-hover: rgba(155, 89, 182, 0.12);
-  --grace-bg-glass: rgba(13, 6, 24, 0.8);
+  --grace-bg-dark: #0A0616;
+  --grace-bg-card: rgba(98, 78, 199, 0.06);
+  --grace-bg-card-hover: rgba(98, 78, 199, 0.12);
+  --grace-bg-glass: rgba(10, 6, 22, 0.8);
 
   /* Text */
-  --grace-text: #F3E5F5;
-  --grace-text-muted: #B39DDB;
-  --grace-text-dim: #7E57A8;
+  --grace-text: #EDE7F6;
+  --grace-text-muted: #A594D4;
+  --grace-text-dim: #6E56B0;
 
   /* Borders */
-  --grace-border: rgba(155, 89, 182, 0.15);
+  --grace-border: rgba(98, 78, 199, 0.15);
   --grace-border-glow: rgba(233, 30, 99, 0.3);
 
   /* Gradients */
-  --grace-gradient: linear-gradient(135deg, #9B59B6 0%, #E91E63 100%);
-  --grace-gradient-subtle: linear-gradient(135deg, rgba(155, 89, 182, 0.15) 0%, rgba(233, 30, 99, 0.08) 100%);
-  --grace-gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(155, 89, 182, 0.12) 0%, transparent 60%),
+  --grace-gradient: linear-gradient(135deg, #624ec7 0%, #E91E63 100%);
+  --grace-gradient-subtle: linear-gradient(135deg, rgba(98, 78, 199, 0.15) 0%, rgba(233, 30, 99, 0.08) 100%);
+  --grace-gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(98, 78, 199, 0.12) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(233, 30, 99, 0.06) 0%, transparent 50%);
 
   /* Status */
@@ -48,8 +48,8 @@
   --nav-height: 72px;
 
   /* Shadows */
-  --grace-shadow: 0 4px 24px rgba(155, 89, 182, 0.12);
-  --grace-shadow-lg: 0 8px 48px rgba(155, 89, 182, 0.18);
+  --grace-shadow: 0 4px 24px rgba(98, 78, 199, 0.12);
+  --grace-shadow-lg: 0 8px 48px rgba(98, 78, 199, 0.18);
   --grace-glow: 0 0 30px rgba(233, 30, 99, 0.15);
 }
 
@@ -229,7 +229,7 @@ pre {
   width: 600px;
   height: 600px;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(155, 89, 182, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(98, 78, 199, 0.12) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -395,7 +395,7 @@ pre {
 
 .card:hover {
   background: var(--grace-bg-card-hover);
-  border-color: rgba(155, 89, 182, 0.3);
+  border-color: rgba(98, 78, 199, 0.3);
   transform: translateY(-4px);
   box-shadow: var(--grace-shadow);
 }
@@ -648,7 +648,7 @@ pre {
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(155, 89, 182, 0.2);
+    box-shadow: 0 0 20px rgba(98, 78, 199, 0.2);
   }
 
   50% {

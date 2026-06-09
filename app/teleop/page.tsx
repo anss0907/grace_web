@@ -263,7 +263,7 @@ export default function TeleopPage() {
                 padding: "10px 20px",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: "rgba(15, 10, 25, 0.95)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.15)",
+                borderBottom: "1px solid rgba(98, 78, 199, 0.15)",
                 marginTop: "70px", zIndex: 10,
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -291,8 +291,8 @@ export default function TeleopPage() {
                 <div style={{
                     flex: isMobile ? "0 0 auto" : "1 1 60%",
                     display: "flex", flexDirection: "column", gap: "14px",
-                    borderRight: isMobile ? "none" : "1px solid rgba(155, 89, 182, 0.12)",
-                    borderBottom: isMobile ? "1px solid rgba(155, 89, 182, 0.12)" : "none",
+                    borderRight: isMobile ? "none" : "1px solid rgba(98, 78, 199, 0.12)",
+                    borderBottom: isMobile ? "1px solid rgba(98, 78, 199, 0.12)" : "none",
                     padding: isMobile ? "12px" : "16px",
                     minWidth: 0,
                 }}>
@@ -303,7 +303,7 @@ export default function TeleopPage() {
                         minHeight: isMobile ? "250px" : "300px",
                         borderRadius: "12px",
                         overflow: "hidden",
-                        border: "1px solid rgba(155, 89, 182, 0.15)",
+                        border: "1px solid rgba(98, 78, 199, 0.15)",
                     }}>
                         <MapCanvas
                             ros={ros}
@@ -350,8 +350,8 @@ export default function TeleopPage() {
                                 width: PAD_SIZE,
                                 height: PAD_SIZE,
                                 borderRadius: "50%",
-                                background: "radial-gradient(circle, rgba(155, 89, 182, 0.08) 0%, rgba(155, 89, 182, 0.02) 100%)",
-                                border: "2px solid rgba(155, 89, 182, 0.2)",
+                                background: "radial-gradient(circle, rgba(98, 78, 199, 0.08) 0%, rgba(98, 78, 199, 0.02) 100%)",
+                                border: "2px solid rgba(98, 78, 199, 0.2)",
                                 position: "relative",
                                 touchAction: "none",
                                 cursor: "grab",
@@ -359,15 +359,15 @@ export default function TeleopPage() {
                             }}
                         >
                             {/* Crosshairs */}
-                            <div style={{ position: "absolute", top: "50%", left: "10%", right: "10%", height: "1px", backgroundColor: "rgba(155, 89, 182, 0.15)" }} />
-                            <div style={{ position: "absolute", left: "50%", top: "10%", bottom: "10%", width: "1px", backgroundColor: "rgba(155, 89, 182, 0.15)" }} />
+                            <div style={{ position: "absolute", top: "50%", left: "10%", right: "10%", height: "1px", backgroundColor: "rgba(98, 78, 199, 0.15)" }} />
+                            <div style={{ position: "absolute", left: "50%", top: "10%", bottom: "10%", width: "1px", backgroundColor: "rgba(98, 78, 199, 0.15)" }} />
                             {/* Knob */}
                             <div style={{
                                 width: KNOB_SIZE, height: KNOB_SIZE, borderRadius: "50%",
                                 background: isDragging.current
                                     ? "linear-gradient(135deg, var(--primary), var(--secondary))"
-                                    : "linear-gradient(135deg, rgba(155, 89, 182, 0.5), rgba(183, 110, 121, 0.5))",
-                                boxShadow: isDragging.current ? "0 0 20px rgba(155, 89, 182, 0.5)" : "0 0 10px rgba(155, 89, 182, 0.2)",
+                                    : "linear-gradient(135deg, rgba(98, 78, 199, 0.5), rgba(183, 110, 121, 0.5))",
+                                boxShadow: isDragging.current ? "0 0 20px rgba(98, 78, 199, 0.5)" : "0 0 10px rgba(98, 78, 199, 0.2)",
                                 position: "absolute",
                                 top: `calc(50% - ${KNOB_SIZE / 2}px + ${knobOffsetY}px)`,
                                 left: `calc(50% - ${KNOB_SIZE / 2}px + ${knobOffsetX}px)`,
@@ -523,7 +523,7 @@ export default function TeleopPage() {
                                                 cursor: "pointer", display: "flex", flexDirection: "column", gap: "2px"
                                             }}
                                         >
-                                            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#9b59b6" }}>{wp.name}</span>
+                                            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#624ec7" }}>{wp.name}</span>
                                             <span style={{ fontSize: "0.55rem", opacity: 0.5, fontFamily: "monospace" }}>
                                                 {wp.x.toFixed(1)}, {wp.y.toFixed(1)}, {wp.theta.toFixed(1)} rad
                                             </span>

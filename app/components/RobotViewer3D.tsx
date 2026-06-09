@@ -9,9 +9,9 @@ import * as THREE from "three";
 // URDF-derived transforms for hardware base
 // ============================================================
 const URDF_PARTS = [
-    { name: "base_link", file: "/models/base_link.glb", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#1a1a2e" },
-    { name: "wheel_right", file: "/models/wheel_right_link.glb", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#9B59B6" },
-    { name: "wheel_left", file: "/models/wheel_left_link.glb", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#9B59B6" },
+    { name: "base_link", file: "/models/base_link.glb", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#624ec7" },
+    { name: "wheel_right", file: "/models/wheel_right_link.glb", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
+    { name: "wheel_left", file: "/models/wheel_left_link.glb", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
     { name: "caster_bl", file: "/models/caster_back_left_link.glb", position: [-0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
     { name: "caster_br", file: "/models/caster_back_right_link.glb", position: [-0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
     { name: "caster_fl", file: "/models/caster_front_left_link.glb", position: [0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
@@ -146,7 +146,7 @@ function FullBodyModel({ scrollProgress }: { scrollProgress: number }) {
     return (
         <group ref={groupRef} position={[1.8, 0, 0]}>
             <mesh geometry={geometry}>
-                <meshPhongMaterial color="#2a1a3e" specular="#9B59B6" shininess={40} transparent opacity={0.85} />
+                <meshPhongMaterial color="#2a1a3e" specular="#624ec7" shininess={40} transparent opacity={0.85} />
             </mesh>
         </group>
     );
@@ -279,7 +279,7 @@ function ScrollStorySection({
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[5, 8, 5]} intensity={1} color="#F3E5F5" />
                     <directionalLight position={[-3, 4, -2]} intensity={0.4} color="#E91E63" />
-                    <pointLight position={[0, 3, 0]} intensity={0.4} color="#9B59B6" />
+                    <pointLight position={[0, 3, 0]} intensity={0.4} color="#624ec7" />
 
                     <Suspense fallback={null}>
                         <ScrollProgressInjector scrollProgress={scrollProgress}>
@@ -339,7 +339,7 @@ function ScrollStorySection({
                                     borderRadius: "20px",
                                     background: "rgba(13, 6, 24, 0.85)",
                                     backdropFilter: "blur(16px)",
-                                    border: `1px solid rgba(155, 89, 182, ${isActive ? "0.3" : "0.1"})`,
+                                    border: `1px solid rgba(98, 78, 199, ${isActive ? "0.3" : "0.1"})`,
                                     opacity: isActive ? 1 : 0.3,
                                     transform: `translateY(${isActive ? "0" : "20px"})`,
                                     transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)",

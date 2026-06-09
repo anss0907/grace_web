@@ -59,7 +59,7 @@ export default function CameraStream({ topic = "/camera/camera/color/image_raw" 
       background: "#000",
       borderRadius: "12px",
       overflow: "hidden",
-      border: "1px solid rgba(155, 89, 182, 0.2)",
+      border: "1px solid rgba(98, 78, 199, 0.2)",
       boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",

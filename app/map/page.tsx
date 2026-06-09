@@ -15,7 +15,7 @@ export default function MapPage() {
                 alignItems: "center",
                 gap: "12px",
                 background: "rgba(15, 10, 25, 0.95)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.15)",
+                borderBottom: "1px solid rgba(98, 78, 199, 0.15)",
                 zIndex: 10,
                 marginTop: "70px",
             }}>

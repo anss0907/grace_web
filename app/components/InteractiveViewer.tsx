@@ -9,9 +9,9 @@ import * as THREE from "three";
 // URDF-derived transforms for hardware base
 // ============================================================
 const URDF_PARTS = [
-    { name: "base_link", file: "/models/base_link.glb", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#1a1a2e" },
-    { name: "wheel_right", file: "/models/wheel_right_link.glb", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#9B59B6" },
-    { name: "wheel_left", file: "/models/wheel_left_link.glb", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#9B59B6" },
+    { name: "base_link", file: "/models/base_link.glb", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#624ec7" },
+    { name: "wheel_right", file: "/models/wheel_right_link.glb", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
+    { name: "wheel_left", file: "/models/wheel_left_link.glb", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
     { name: "caster_bl", file: "/models/caster_back_left_link.glb", position: [-0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
     { name: "caster_br", file: "/models/caster_back_right_link.glb", position: [-0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
     { name: "caster_fl", file: "/models/caster_front_left_link.glb", position: [0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
@@ -62,7 +62,7 @@ function FullBodyModel() {
 
     return (
         <mesh geometry={geometry}>
-            <meshPhongMaterial color="#2a1a3e" specular="#9B59B6" shininess={40} />
+            <meshPhongMaterial color="#2a1a3e" specular="#624ec7" shininess={40} />
         </mesh>
     );
 }
@@ -148,8 +148,8 @@ export default function InteractiveViewer() {
                     style={{
                         padding: "0.6rem 2rem",
                         borderRadius: "8px",
-                        border: "1px solid rgba(155, 89, 182, 0.3)",
-                        background: "rgba(155, 89, 182, 0.15)",
+                        border: "1px solid rgba(98, 78, 199, 0.3)",
+                        background: "rgba(98, 78, 199, 0.15)",
                         color: "#F3E5F5",
                         cursor: "pointer",
                         fontSize: "1rem",
@@ -186,14 +186,14 @@ export default function InteractiveViewer() {
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[5, 8, 5]} intensity={1} color="#F3E5F5" />
                 <directionalLight position={[-3, 4, -2]} intensity={0.4} color="#E91E63" />
-                <pointLight position={[0, 3, 0]} intensity={0.4} color="#9B59B6" />
+                <pointLight position={[0, 3, 0]} intensity={0.4} color="#624ec7" />
 
                 {/* Grid floor */}
                 <Grid
                     args={[20, 20]}
                     position={[0, -1, 0]}
                     cellColor="#2a1a3e"
-                    sectionColor="#9B59B6"
+                    sectionColor="#624ec7"
                     fadeDistance={15}
                     fadeStrength={2}
                     cellSize={0.5}
@@ -237,7 +237,7 @@ export default function InteractiveViewer() {
                     padding: "1rem 1.5rem",
                     borderRadius: "12px",
                     background: "rgba(13, 6, 24, 0.8)",
-                    border: "1px solid rgba(155, 89, 182, 0.2)",
+                    border: "1px solid rgba(98, 78, 199, 0.2)",
                     backdropFilter: "blur(10px)",
                 }}>
                     <h2 style={{ color: "#F3E5F5", fontSize: "1.2rem", margin: 0 }}>
@@ -253,7 +253,7 @@ export default function InteractiveViewer() {
                     padding: "0.8rem 1rem",
                     borderRadius: "12px",
                     background: "rgba(13, 6, 24, 0.8)",
-                    border: "1px solid rgba(155, 89, 182, 0.2)",
+                    border: "1px solid rgba(98, 78, 199, 0.2)",
                     backdropFilter: "blur(10px)",
                     display: "flex",
                     gap: "0.5rem",
@@ -266,8 +266,8 @@ export default function InteractiveViewer() {
                             borderRadius: "8px",
                             border: "none",
                             background: activeModel === "fullbody"
-                                ? "linear-gradient(135deg, #9B59B6, #E91E63)"
-                                : "rgba(155, 89, 182, 0.1)",
+                                ? "linear-gradient(135deg, #624ec7, #E91E63)"
+                                : "rgba(98, 78, 199, 0.1)",
                             color: "#F3E5F5",
                             cursor: "pointer",
                             fontSize: "0.8rem",
@@ -285,8 +285,8 @@ export default function InteractiveViewer() {
                             borderRadius: "8px",
                             border: "none",
                             background: activeModel === "base"
-                                ? "linear-gradient(135deg, #9B59B6, #E91E63)"
-                                : "rgba(155, 89, 182, 0.1)",
+                                ? "linear-gradient(135deg, #624ec7, #E91E63)"
+                                : "rgba(98, 78, 199, 0.1)",
                             color: "#F3E5F5",
                             cursor: "pointer",
                             fontSize: "0.8rem",
@@ -305,7 +305,7 @@ export default function InteractiveViewer() {
                         padding: "0.6rem 1rem",
                         borderRadius: "12px",
                         background: "rgba(13, 6, 24, 0.8)",
-                        border: `1px solid ${autoRotate ? "rgba(155, 89, 182, 0.4)" : "rgba(155, 89, 182, 0.15)"}`,
+                        border: `1px solid ${autoRotate ? "rgba(98, 78, 199, 0.4)" : "rgba(98, 78, 199, 0.15)"}`,
                         backdropFilter: "blur(10px)",
                         color: autoRotate ? "#E91E63" : "#B39DDB",
                         cursor: "pointer",
@@ -327,7 +327,7 @@ export default function InteractiveViewer() {
                 padding: "1rem 1.5rem",
                 borderRadius: "12px",
                 background: "rgba(13, 6, 24, 0.8)",
-                border: "1px solid rgba(155, 89, 182, 0.2)",
+                border: "1px solid rgba(98, 78, 199, 0.2)",
                 backdropFilter: "blur(10px)",
                 color: "#B39DDB",
                 fontSize: "0.8rem",

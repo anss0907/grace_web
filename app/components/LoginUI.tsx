@@ -108,19 +108,19 @@ export default function LoginUI() {
           style={{
             marginLeft: "auto",
             padding: "5px 14px", borderRadius: "8px",
-            border: "1px solid rgba(155, 89, 182, 0.2)",
-            background: "rgba(155, 89, 182, 0.08)",
+            border: "1px solid rgba(98, 78, 199, 0.2)",
+            background: "rgba(98, 78, 199, 0.08)",
             color: "#c084fc", fontSize: "0.72rem",
             fontWeight: 600, cursor: "pointer",
             transition: "all 0.2s",
             letterSpacing: "0.03em",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(155, 89, 182, 0.18)";
-            e.currentTarget.style.boxShadow = "0 0 12px rgba(155, 89, 182, 0.15)";
+            e.currentTarget.style.background = "rgba(98, 78, 199, 0.18)";
+            e.currentTarget.style.boxShadow = "0 0 12px rgba(98, 78, 199, 0.15)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(155, 89, 182, 0.08)";
+            e.currentTarget.style.background = "rgba(98, 78, 199, 0.08)";
             e.currentTarget.style.boxShadow = "none";
           }}
         >
@@ -140,16 +140,16 @@ export default function LoginUI() {
           <style>{`
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-            .login-input:focus { border-color: rgba(155, 89, 182, 0.5) !important; outline: none; box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1); }
+            .login-input:focus { border-color: rgba(98, 78, 199, 0.5) !important; outline: none; box-shadow: 0 0 0 3px rgba(98, 78, 199, 0.1); }
           `}</style>
           <div
             ref={modalRef}
             style={{
               width: "360px", maxWidth: "90vw",
               background: "linear-gradient(180deg, rgba(20, 15, 35, 0.98), rgba(10, 8, 20, 0.98))",
-              border: "1px solid rgba(155, 89, 182, 0.15)",
+              border: "1px solid rgba(98, 78, 199, 0.15)",
               borderRadius: "20px", padding: "32px",
-              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(155, 89, 182, 0.05)",
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(98, 78, 199, 0.05)",
               animation: "slideUp 0.3s ease",
             }}
           >
@@ -158,8 +158,8 @@ export default function LoginUI() {
               <div style={{
                 width: "56px", height: "56px", margin: "0 auto 16px",
                 borderRadius: "16px",
-                background: "linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(183, 110, 121, 0.2))",
-                border: "1px solid rgba(155, 89, 182, 0.15)",
+                background: "linear-gradient(135deg, rgba(98, 78, 199, 0.2), rgba(183, 110, 121, 0.2))",
+                border: "1px solid rgba(98, 78, 199, 0.15)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "1.5rem",
               }}>
@@ -202,7 +202,7 @@ export default function LoginUI() {
                   style={{
                     width: "100%", padding: "10px 14px",
                     borderRadius: "10px",
-                    border: "1px solid rgba(155, 89, 182, 0.15)",
+                    border: "1px solid rgba(98, 78, 199, 0.15)",
                     background: "rgba(255, 255, 255, 0.03)",
                     color: "#e0e0e0", fontSize: "0.85rem",
                     fontFamily: "'JetBrains Mono', monospace",
@@ -230,7 +230,7 @@ export default function LoginUI() {
                   style={{
                     width: "100%", padding: "10px 14px",
                     borderRadius: "10px",
-                    border: "1px solid rgba(155, 89, 182, 0.15)",
+                    border: "1px solid rgba(98, 78, 199, 0.15)",
                     background: "rgba(255, 255, 255, 0.03)",
                     color: "#e0e0e0", fontSize: "0.85rem",
                     fontFamily: "'JetBrains Mono', monospace",
@@ -261,7 +261,7 @@ export default function LoginUI() {
                   width: "100%", padding: "11px",
                   borderRadius: "10px", border: "none",
                   background: submitting || !username || !password
-                    ? "rgba(155, 89, 182, 0.15)"
+                    ? "rgba(98, 78, 199, 0.15)"
                     : "linear-gradient(135deg, var(--primary), var(--secondary))",
                   color: submitting || !username || !password
                     ? "rgba(255,255,255,0.3)" : "#fff",

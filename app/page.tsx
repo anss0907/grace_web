@@ -415,13 +415,47 @@ function DesktopHome() {
                 companionship-first robotics with a real-world application.
               </p>
               <ul className="spec-list" style={{ marginTop: "1rem" }}>
-                <li>Author: Muhammad Anss</li>
-                <li>Email: muhammadanss0907@gmail.com</li>
+                <li>Group 3 Members:</li>
+                <li>• Muhammad Anss (2022-MC-01)</li>
+                <li>• Anas Gulzar (2022-MC-07)</li>
+                <li>• Alishba Ramzan (2022-MC-35)</li>
+                <br />
                 <li>Department: Mechatronics &amp; Control Engineering</li>
                 <li>University: UET Lahore</li>
-                <li>Year: 2022</li>
+                <li>Year: FYP 2022</li>
               </ul>
             </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ========== PROJECT POSTER ========== */}
+      <ScrollReveal>
+        <section className="section">
+          <div className="section-header">
+            <div className="section-label">Documentation</div>
+            <h2 className="section-title">Project Poster</h2>
+            <div className="divider"></div>
+            <p className="section-desc">
+              The official FYP poster detailing the core architecture, capabilities, and goals of the GRACE project.
+            </p>
+          </div>
+
+          <div className="image-showcase" style={{ display: 'flex', justifyContent: 'center' }}>
+            <Image
+              src="/images/FYPposter.jpg"
+              alt="GRACE Project Poster"
+              width={1200}
+              height={800}
+              style={{
+                width: "100%",
+                maxWidth: "1000px",
+                height: "auto",
+                borderRadius: "20px",
+                border: "1px solid var(--grace-border)",
+                boxShadow: "var(--grace-shadow-lg)"
+              }}
+            />
           </div>
         </section>
       </ScrollReveal>

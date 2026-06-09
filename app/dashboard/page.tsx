@@ -137,7 +137,7 @@ export default function DashboardPage() {
                         label="Command"
                         value={cmdLeft}
                         maxValue={MAX_GAUGE_VALUE}
-                        color="#9b59b6"
+                        color="#624ec7"
                         accentColor="#c084fc"
                         direction="⬆ Sending"
                     />
@@ -188,7 +188,7 @@ export default function DashboardPage() {
                         direction="⬆"
                         label="Commands"
                         topic="simple_velocity_controller/commands"
-                        color="#9b59b6"
+                        color="#624ec7"
                     />
                     <TopicBadge
                         direction="⬇"

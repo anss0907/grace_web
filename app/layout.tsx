@@ -130,10 +130,19 @@ export default function RootLayout({
             <div className="footer-col">
               <h4>Project Info</h4>
               <ul>
-                <li>FYP 2022</li>
+                <li>FYP 2022 · Group 3</li>
                 <li>Dept. of Mechatronics &amp; Control</li>
                 <li>UET Lahore</li>
                 <li>ROS 2 Humble · JetPack 6</li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h4>Team Members</h4>
+              <ul>
+                <li>Muhammad Anss (2022-MC-01)</li>
+                <li>Anas Gulzar (2022-MC-07)</li>
+                <li>Alishba Ramzan (2022-MC-35)</li>
               </ul>
             </div>
           </div>
@@ -144,9 +153,9 @@ export default function RootLayout({
               reserved
             </span>
             <span className="footer-author">
-              Built by{" "}
-              <a href="mailto:muhammadanss0907@gmail.com">Muhammad Anss</a> ·
-              UET Lahore
+              Built by Group 3 ·{" "}
+              <a href="mailto:muhammadanss0907@gmail.com">Muhammad Anss</a>,{" "}
+              Anas Gulzar &amp; Alishba Ramzan · UET Lahore
             </span>
           </div>
         </footer>

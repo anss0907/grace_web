@@ -133,7 +133,7 @@ export default function TelemetryPage() {
                             <span style={{ opacity: 0.5, fontWeight: 400 }}>⬇ Listening:</span>{" "}
                             <code style={{
                                 color: "var(--primary)",
-                                backgroundColor: "rgba(155, 89, 182, 0.1)",
+                                backgroundColor: "rgba(98, 78, 199, 0.1)",
                                 padding: "2px 8px",
                                 borderRadius: "6px",
                                 fontSize: "0.95rem",
@@ -154,7 +154,7 @@ export default function TelemetryPage() {
                                 fontWeight: 600,
                                 color: "var(--text-primary)",
                                 padding: "1rem",
-                                backgroundColor: "rgba(155, 89, 182, 0.06)",
+                                backgroundColor: "rgba(98, 78, 199, 0.06)",
                                 borderRadius: "12px",
                                 borderLeft: "3px solid var(--primary)",
                                 wordBreak: "break-word",
@@ -210,7 +210,7 @@ export default function TelemetryPage() {
                                 flex: 1,
                                 padding: "12px 16px",
                                 borderRadius: "12px",
-                                border: "1px solid rgba(155, 89, 182, 0.2)",
+                                border: "1px solid rgba(98, 78, 199, 0.2)",
                                 backgroundColor: "rgba(255, 255, 255, 0.03)",
                                 color: "var(--text-primary)",
                                 fontSize: "0.95rem",
@@ -219,7 +219,7 @@ export default function TelemetryPage() {
                                 transition: "border-color 0.2s ease",
                             }}
                             onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                            onBlur={(e) => (e.target.style.borderColor = "rgba(155, 89, 182, 0.2)")}
+                            onBlur={(e) => (e.target.style.borderColor = "rgba(98, 78, 199, 0.2)")}
                         />
                         <button
                             onClick={handlePublish}
@@ -230,7 +230,7 @@ export default function TelemetryPage() {
                                 border: "none",
                                 background: status === "connected" && publishInput.trim()
                                     ? "linear-gradient(135deg, var(--primary), var(--secondary))"
-                                    : "rgba(155, 89, 182, 0.15)",
+                                    : "rgba(98, 78, 199, 0.15)",
                                 color: status === "connected" && publishInput.trim()
                                     ? "#fff"
                                     : "rgba(255,255,255,0.3)",
@@ -261,8 +261,8 @@ export default function TelemetryPage() {
                     marginTop: "2rem",
                     padding: "1.5rem 2rem",
                     borderRadius: "16px",
-                    backgroundColor: "rgba(155, 89, 182, 0.05)",
-                    border: "1px solid rgba(155, 89, 182, 0.1)",
+                    backgroundColor: "rgba(98, 78, 199, 0.05)",
+                    border: "1px solid rgba(98, 78, 199, 0.1)",
                     fontSize: "0.8rem",
                     opacity: 0.6,
                     lineHeight: 1.8,

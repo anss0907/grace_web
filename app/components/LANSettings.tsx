@@ -18,7 +18,7 @@ export default function LANSettings() {
       background: "rgba(10, 8, 20, 0.6)",
       padding: "4px 8px",
       borderRadius: "12px",
-      border: "1px solid rgba(155, 89, 182, 0.15)",
+      border: "1px solid rgba(98, 78, 199, 0.15)",
     }}>
       <input
         type="text"

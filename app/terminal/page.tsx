@@ -177,7 +177,7 @@ export default function TerminalPage() {
                 .kill-spin { animation: spin 0.8s linear infinite; display: inline-block; }
                 .preset-btn:hover:not(:disabled) {
                     transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.2);
+                    box-shadow: 0 4px 12px rgba(98, 78, 199, 0.2);
                 }
                 .preset-btn:active:not(:disabled) { transform: translateY(0); }
                 .kill-btn:hover:not(:disabled) {
@@ -185,20 +185,20 @@ export default function TerminalPage() {
                     filter: brightness(1.2);
                 }
                 .kill-btn:active:not(:disabled) { transform: translateY(0); }
-                .tab-item:hover { background: rgba(155, 89, 182, 0.08) !important; }
+                .tab-item:hover { background: rgba(98, 78, 199, 0.08) !important; }
                 .close-btn:hover { color: #ff1744 !important; opacity: 0.9 !important; }
                 .xterm { height: 100%; }
                 .xterm .xterm-viewport { overflow-y: auto !important; }
                 .xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }
                 .xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
                 .xterm .xterm-viewport::-webkit-scrollbar-thumb {
-                    background: rgba(155, 89, 182, 0.3); border-radius: 4px;
+                    background: rgba(98, 78, 199, 0.3); border-radius: 4px;
                 }
-                .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgba(155, 89, 182, 0.5); }
+                .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgba(98, 78, 199, 0.5); }
                 .terminal-area { position: relative; background: #0a0a0a; }
                 .terminal-area::before {
                     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40px;
-                    background: linear-gradient(to bottom, rgba(155, 89, 182, 0.03), transparent);
+                    background: linear-gradient(to bottom, rgba(98, 78, 199, 0.03), transparent);
                     pointer-events: none; z-index: 1;
                 }
                 .stop-float {
@@ -218,7 +218,7 @@ export default function TerminalPage() {
                 padding: "10px 20px",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: "rgba(15, 10, 25, 0.98)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.12)",
+                borderBottom: "1px solid rgba(98, 78, 199, 0.12)",
                 backdropFilter: "blur(12px)",
                 flexWrap: "wrap", gap: "8px",
                 flexShrink: 0,
@@ -247,14 +247,14 @@ export default function TerminalPage() {
                 padding: "8px 20px",
                 display: "flex", alignItems: "center", gap: "6px",
                 background: "rgba(15, 10, 25, 0.85)",
-                borderBottom: "1px solid rgba(155, 89, 182, 0.06)",
+                borderBottom: "1px solid rgba(98, 78, 199, 0.06)",
                 flexWrap: "wrap",
                 overflowX: "auto",
                 flexShrink: 0,
             }}>
                 <span style={{
                     fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase",
-                    letterSpacing: "0.08em", color: "rgba(155, 89, 182, 0.4)",
+                    letterSpacing: "0.08em", color: "rgba(98, 78, 199, 0.4)",
                     marginRight: "6px",
                 }}>Presets</span>
 
@@ -268,9 +268,9 @@ export default function TerminalPage() {
                         style={{
                             padding: "5px 12px",
                             borderRadius: "8px",
-                            border: "1px solid rgba(155, 89, 182, 0.15)",
+                            border: "1px solid rgba(98, 78, 199, 0.15)",
                             background: relay.agentStatus === "online" && isAuthenticated
-                                ? "rgba(155, 89, 182, 0.06)"
+                                ? "rgba(98, 78, 199, 0.06)"
                                 : "rgba(255,255,255,0.02)",
                             color: relay.agentStatus === "online" && isAuthenticated ? "#d4c0e8" : "rgba(255,255,255,0.15)",
                             fontSize: "0.72rem",
@@ -446,7 +446,7 @@ export default function TerminalPage() {
                 <div style={{
                     display: "flex",
                     background: "rgba(10, 8, 20, 0.95)",
-                    borderBottom: "1px solid rgba(155, 89, 182, 0.08)",
+                    borderBottom: "1px solid rgba(98, 78, 199, 0.08)",
                     overflowX: "auto",
                     flexShrink: 0,
                     alignItems: "center",
@@ -466,7 +466,7 @@ export default function TerminalPage() {
                                     ? "2px solid var(--primary)"
                                     : "2px solid transparent",
                                 background: activeTab === tab.id
-                                    ? "rgba(155, 89, 182, 0.05)"
+                                    ? "rgba(98, 78, 199, 0.05)"
                                     : "transparent",
                                 color: activeTab === tab.id ? "#e0d0f0" : "rgba(255,255,255,0.35)",
                                 transition: "all 0.15s ease",
@@ -523,14 +523,14 @@ export default function TerminalPage() {
                             style={{
                                 padding: "7px 12px",
                                 fontSize: "0.8rem",
-                                color: "rgba(155, 89, 182, 0.6)",
+                                color: "rgba(98, 78, 199, 0.6)",
                                 cursor: "pointer",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 transition: "all 0.15s ease",
                             }}
                             title="New Terminal"
-                            onMouseOver={(e) => e.currentTarget.style.color = "rgba(155, 89, 182, 1)"}
-                            onMouseOut={(e) => e.currentTarget.style.color = "rgba(155, 89, 182, 0.6)"}
+                            onMouseOver={(e) => e.currentTarget.style.color = "rgba(98, 78, 199, 1)"}
+                            onMouseOut={(e) => e.currentTarget.style.color = "rgba(98, 78, 199, 0.6)"}
                         >
                             ➕
                         </div>
@@ -644,16 +644,16 @@ function XTermView({
                     theme: {
                         background: "transparent",
                         foreground: "#e0e0e0",
-                        cursor: "#9b59b6",
+                        cursor: "#624ec7",
                         cursorAccent: "#0a0a0a",
-                        selectionBackground: "rgba(155, 89, 182, 0.3)",
+                        selectionBackground: "rgba(98, 78, 199, 0.3)",
                         selectionForeground: "#ffffff",
                         black: "#1a1a2e",
                         red: "#ff1744",
                         green: "#00e676",
                         yellow: "#ffab00",
                         blue: "#448aff",
-                        magenta: "#9b59b6",
+                        magenta: "#624ec7",
                         cyan: "#00bcd4",
                         white: "#e0e0e0",
                         brightBlack: "#555577",
@@ -758,8 +758,8 @@ function XTermView({
                 flex: 1,
                 background: "#0c0a12",
                 borderRadius: "12px",
-                border: "1px solid rgba(155, 89, 182, 0.15)",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(155, 89, 182, 0.04)",
+                border: "1px solid rgba(98, 78, 199, 0.15)",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(98, 78, 199, 0.04)",
                 padding: "14px 16px",
                 overflow: "hidden",
                 display: "flex",
@@ -825,7 +825,7 @@ function EmptyState({
                 <>
                     <div style={{
                         fontSize: "2.5rem", marginBottom: "16px",
-                        filter: "drop-shadow(0 0 12px rgba(155, 89, 182, 0.3))",
+                        filter: "drop-shadow(0 0 12px rgba(98, 78, 199, 0.3))",
                     }}>⌨️</div>
                     <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: "0 0 8px" }}>
                         <span className="gradient-text">Agent Connected</span>
