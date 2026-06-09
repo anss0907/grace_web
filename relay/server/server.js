@@ -42,14 +42,14 @@ const CLIENT_TOKEN = process.env.CLIENT_TOKEN;
 const HEARTBEAT_INTERVAL = 30000; // 30s
 
 if (!AGENT_TOKEN || !CLIENT_TOKEN) {
-    console.error("❌ AGENT_TOKEN and CLIENT_TOKEN environment variables are required.");
+    console.error("AGENT_TOKEN and CLIENT_TOKEN environment variables are required.");
     process.exit(1);
 }
 
 /* ── State ────────────────────────────────────────── */
 let agentSocket = null;
-let clientSocket = null;
-let rosbridgeSocket = null;
+const clientSockets = new Set();
+const rosbridgeSockets = new Set();
 
 /* ── HTTP Server (for health checks) ──────────────── */
 const server = http.createServer((req, res) => {
@@ -58,8 +58,8 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
             status: "ok",
             agentConnected: agentSocket !== null,
-            clientConnected: clientSocket !== null,
-            rosbridgeConnected: rosbridgeSocket !== null,
+            clientConnected: clientSockets.size > 0,
+            rosbridgeConnected: rosbridgeSockets.size > 0,
             uptime: process.uptime(),
         }));
         return;
@@ -79,68 +79,58 @@ wss.on("connection", (ws, req) => {
     /* ── Authenticate ── */
     if (role === "agent") {
         if (token !== AGENT_TOKEN) {
-            console.log("⛔ Agent connection rejected: invalid token");
+            console.log("Agent connection rejected: invalid token");
             ws.close(4001, "Invalid agent token");
             return;
         }
 
         // Single agent: disconnect previous if exists
         if (agentSocket) {
-            console.log("⚠️  Previous agent disconnected (replaced by new connection)");
+            console.log("Previous agent disconnected (replaced by new connection)");
             agentSocket.close(4002, "Replaced by new agent");
         }
 
         agentSocket = ws;
         ws._role = "agent";
-        console.log("✅ Agent connected");
+        console.log("Agent connected");
 
         // Notify client that agent is online
         sendToClient({ type: "agent_online" });
 
     } else if (role === "client") {
         if (token !== CLIENT_TOKEN) {
-            console.log("⛔ Client connection rejected: invalid token");
+            console.log("Client connection rejected: invalid token");
             ws.close(4001, "Invalid client token");
             return;
         }
 
-        // Single client mode: disconnect previous
-        if (clientSocket) {
-            console.log("⚠️  Previous client disconnected (replaced by new session)");
-            clientSocket.close(4003, "Replaced by new client session");
-        }
-
-        clientSocket = ws;
+        clientSockets.add(ws);
         ws._role = "client";
-        console.log("✅ Client connected");
+        console.log(`Client connected (Total: ${clientSockets.size})`);
 
         // Inform client whether agent is online
-        sendToClient({
+        ws.send(JSON.stringify({
             type: agentSocket ? "agent_online" : "agent_offline",
-        });
+        }));
 
     } else if (role === "rosbridge") {
         if (token !== CLIENT_TOKEN) {
-            console.log("⛔ Rosbridge proxy rejected: invalid token");
+            console.log("Rosbridge proxy rejected: invalid token");
             ws.close(4001, "Invalid client token");
             return;
         }
 
-        // Single rosbridge connection
-        if (rosbridgeSocket) {
-            console.log("⚠️  Previous rosbridge proxy replaced");
-            rosbridgeSocket.close(4003, "Replaced by new rosbridge session");
+        rosbridgeSockets.add(ws);
+        ws._role = "rosbridge";
+        console.log(`Rosbridge proxy connected (Total: ${rosbridgeSockets.size})`);
+
+        // Tell agent to connect to local rosbridge if this is the first one
+        if (rosbridgeSockets.size === 1) {
+            sendToAgent({ type: "rosbridge_connect" });
         }
 
-        rosbridgeSocket = ws;
-        ws._role = "rosbridge";
-        console.log("✅ Rosbridge proxy connected");
-
-        // Tell agent to connect to local rosbridge
-        sendToAgent({ type: "rosbridge_connect" });
-
     } else {
-        console.log(`⛔ Unknown role: ${role}`);
+        console.log(`Unknown role: ${role}`);
         ws.close(4000, "Unknown role");
         return;
     }
@@ -171,17 +161,21 @@ wss.on("connection", (ws, req) => {
             try {
                 const msg = JSON.parse(raw);
                 if (msg.type === "rosbridge_recv") {
-                    // Forward raw rosbridge data to rosbridge client
-                    if (rosbridgeSocket && rosbridgeSocket.readyState === WebSocket.OPEN) {
-                        rosbridgeSocket.send(msg.data);
+                    // Forward raw rosbridge data to rosbridge clients
+                    for (const rb of rosbridgeSockets) {
+                        if (rb.readyState === WebSocket.OPEN) {
+                            rb.send(msg.data);
+                        }
                     }
                     return; // Don't forward to regular client
                 }
             } catch { /* not JSON, forward as-is */ }
 
-            // Forward everything else from agent → client
-            if (clientSocket && clientSocket.readyState === WebSocket.OPEN) {
-                clientSocket.send(raw);
+            // Forward everything else from agent → clients
+            for (const client of clientSockets) {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(raw);
+                }
             }
         }
     });
@@ -190,16 +184,17 @@ wss.on("connection", (ws, req) => {
     ws.on("close", () => {
         if (ws._role === "agent" && ws === agentSocket) {
             agentSocket = null;
-            console.log("🔴 Agent disconnected");
+            console.log("Agent disconnected");
             sendToClient({ type: "agent_offline" });
-        } else if (ws._role === "client" && ws === clientSocket) {
-            clientSocket = null;
-            console.log("🔴 Client disconnected");
-        } else if (ws._role === "rosbridge" && ws === rosbridgeSocket) {
-            rosbridgeSocket = null;
-            console.log("🔴 Rosbridge proxy disconnected");
-            // Tell agent to disconnect from local rosbridge
-            sendToAgent({ type: "rosbridge_disconnect" });
+        } else if (ws._role === "client") {
+            clientSockets.delete(ws);
+            console.log(`Client disconnected (Remaining: ${clientSockets.size})`);
+        } else if (ws._role === "rosbridge") {
+            rosbridgeSockets.delete(ws);
+            console.log(`Rosbridge proxy disconnected (Remaining: ${rosbridgeSockets.size})`);
+            if (rosbridgeSockets.size === 0) {
+                sendToAgent({ type: "rosbridge_disconnect" });
+            }
         }
     });
 
@@ -212,7 +207,7 @@ wss.on("connection", (ws, req) => {
 const heartbeatInterval = setInterval(() => {
     wss.clients.forEach((ws) => {
         if (!ws.isAlive) {
-            console.log(`💀 Dead connection detected (${ws._role}), terminating`);
+            console.log(`Dead connection detected (${ws._role}), terminating`);
             ws.terminate();
             return;
         }
@@ -227,8 +222,11 @@ wss.on("close", () => {
 
 /* ── Helpers ──────────────────────────────────────── */
 function sendToClient(obj) {
-    if (clientSocket && clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(JSON.stringify(obj));
+    const payload = JSON.stringify(obj);
+    for (const client of clientSockets) {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(payload);
+        }
     }
 }
 
@@ -240,6 +238,6 @@ function sendToAgent(obj) {
 
 /* ── Start ────────────────────────────────────────── */
 server.listen(PORT, () => {
-    console.log(`🚀 GRACE Relay Server listening on port ${PORT}`);
+    console.log(`GRACE Relay Server listening on port ${PORT}`);
     console.log(`   Health check: http://localhost:${PORT}/health`);
 });

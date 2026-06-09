@@ -5,6 +5,7 @@ import { useROS } from "../lib/useROS";
 import { useAuth } from "../components/AuthProvider";
 import * as ROSLIB from "roslib";
 import MapCanvas from "../components/MapCanvas";
+import CameraStream from "../components/CameraStream";
 
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false);
@@ -199,33 +200,43 @@ export default function TeleopPage() {
             {/* Split layout: Map | Controls (stacks on mobile) */}
             <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
 
-                {/* LEFT: Live map */}
+                {/* LEFT: Camera Stream + Live map */}
                 <div style={{
-                    flex: isMobile ? "0 0 45vh" : "1 1 60%",
+                    flex: isMobile ? "0 0 auto" : "1 1 60%",
+                    display: "flex", flexDirection: "column", gap: "14px",
                     borderRight: isMobile ? "none" : "1px solid rgba(155, 89, 182, 0.12)",
                     borderBottom: isMobile ? "1px solid rgba(155, 89, 182, 0.12)" : "none",
-                    position: "relative",
+                    padding: isMobile ? "12px" : "16px",
                     minWidth: 0,
-                    minHeight: isMobile ? "250px" : 0,
                 }}>
-                    <MapCanvas
-                        ros={ros}
-                        status={status}
-                        enableNavGoal={true}
-                        showTFLabels={false}
-                        showLegend={false}
-                    />
-                    {/* Compact legend */}
+                    <CameraStream topic="/camera/camera/color/image_raw" />
                     <div style={{
-                        position: "absolute", bottom: 8, left: 8,
-                        background: "rgba(15,10,25,0.8)", borderRadius: 8,
-                        padding: "6px 10px", fontSize: "0.6rem", lineHeight: 1.7,
-                        border: "1px solid rgba(155,89,182,0.08)", backdropFilter: "blur(6px)",
+                        position: "relative",
+                        flex: 1,
+                        minHeight: isMobile ? "250px" : "300px",
+                        borderRadius: "12px",
+                        overflow: "hidden",
+                        border: "1px solid rgba(155, 89, 182, 0.15)",
                     }}>
-                        <span style={{ color: "#00e676" }}>▲</span> Robot&ensp;
-                        <span style={{ color: "#ff3232" }}>●</span> Laser&ensp;
-                        <span style={{ color: "#0064ff" }}>━</span> Plan&ensp;
-                        <span style={{ color: "#ff1744" }}>⊕</span> R-click = Goal
+                        <MapCanvas
+                            ros={ros}
+                            status={status}
+                            enableNavGoal={true}
+                            showTFLabels={false}
+                            showLegend={false}
+                        />
+                        {/* Compact legend */}
+                        <div style={{
+                            position: "absolute", bottom: 8, left: 8,
+                            background: "rgba(15,10,25,0.8)", borderRadius: 8,
+                            padding: "6px 10px", fontSize: "0.6rem", lineHeight: 1.7,
+                            border: "1px solid rgba(155,89,182,0.08)", backdropFilter: "blur(6px)",
+                        }}>
+                            <span style={{ color: "#00e676" }}>▲</span> Robot&ensp;
+                            <span style={{ color: "#ff3232" }}>●</span> Laser&ensp;
+                            <span style={{ color: "#0064ff" }}>━</span> Plan&ensp;
+                            <span style={{ color: "#ff1744" }}>⊕</span> R-click = Goal
+                        </div>
                     </div>
                 </div>
 

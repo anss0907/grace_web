@@ -3,6 +3,8 @@ import Link from "next/link";
 import ScrollToTop from "./components/ScrollToTop";
 import MobileNav from "./components/MobileNav";
 import { AuthWrapper, NavbarAuth } from "./components/AuthWrapper";
+import { LANProvider } from "./components/LANProvider";
+import LANSettings from "./components/LANSettings";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -23,9 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <AuthWrapper>
+        <LANProvider>
         <ScrollToTop />
         {/* ========== NAVBAR ========== */}
         <nav className="navbar">
@@ -68,7 +71,8 @@ export default function RootLayout({
             </li>
           </ul>
 
-          {/* Admin login/logout */}
+          {/* Admin login/logout & LAN settings */}
+          <LANSettings />
           <NavbarAuth />
 
           {/* Mobile nav (hamburger + drawer) */}
@@ -146,6 +150,7 @@ export default function RootLayout({
             </span>
           </div>
         </footer>
+        </LANProvider>
         </AuthWrapper>
       </body>
     </html>

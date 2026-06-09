@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRelay } from "../lib/useRelay";
 import { useAuth } from "../components/AuthProvider";
+import { useLAN } from "../components/LANProvider";
 import type { PresetInfo } from "../lib/useRelay";
 import "@xterm/xterm/css/xterm.css";
 
@@ -32,10 +33,12 @@ function formatUptime(seconds: number) {
 export default function TerminalPage() {
     const relay = useRelay();
     const { isAuthenticated } = useAuth();
+    const { setLanIp } = useLAN();
     const [tabs, setTabs] = useState<TerminalTab[]>([]);
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [killRosStatus, setKillRosStatus] = useState<{ msg: string; ok: boolean } | null>(null);
     const [killing, setKilling] = useState<string | null>(null); // which kill is in progress
+    const [ipPrompt, setIpPrompt] = useState<string | null>(null); // holds discovered IP
     const recoveredRef = useRef<Set<string>>(new Set()); // track IDs we already recovered
 
     /* ── Create a new blank terminal ── */
@@ -69,6 +72,30 @@ export default function TerminalPage() {
     /* ── Send Ctrl+C to stop a running command ── */
     const stopCommand = useCallback((id: string) => {
         relay.sendInput(id, "\x03"); // Ctrl+C character
+    }, [relay]);
+
+    /* ── Find Robot IP ── */
+    const findRobotIp = useCallback(() => {
+        const id = uuid();
+        setTabs((prev) => [...prev, { id, label: "🔍 Find IP", preset: null, alive: true }]);
+        setActiveTab(id);
+        relay.createTerminal(id, "Find IP");
+        
+        // Wait a tiny bit for it to connect, then run hostname -I
+        setTimeout(() => {
+            relay.sendInput(id, "hostname -I\r");
+        }, 500);
+
+        // Listen to this specific terminal's output
+        const listener = (data: string) => {
+            // Match local IPv4 addresses (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+            const match = data.match(/\b(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)\b/);
+            if (match) {
+                setIpPrompt(match[0]);
+                // Only prompt once, then we can technically ignore further output.
+            }
+        };
+        relay.onTerminalOutput(id, listener);
     }, [relay]);
 
     /* ── Handle terminal exit ── */
@@ -281,6 +308,30 @@ export default function TerminalPage() {
                     ➕ New Terminal
                 </button>
 
+                <div style={{ width: "1px", height: "20px", background: "rgba(0,188,212,0.1)", margin: "0 4px" }} />
+
+                <button
+                    className="preset-btn"
+                    onClick={findRobotIp}
+                    disabled={relay.agentStatus !== "online" || !isAuthenticated}
+                    style={{
+                        padding: "5px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(0, 188, 212, 0.15)",
+                        background: relay.agentStatus === "online" && isAuthenticated
+                            ? "rgba(0, 188, 212, 0.06)"
+                            : "rgba(255,255,255,0.02)",
+                        color: relay.agentStatus === "online" && isAuthenticated ? "#84ffff" : "rgba(255,255,255,0.15)",
+                        fontSize: "0.72rem",
+                        fontWeight: 500,
+                        cursor: relay.agentStatus === "online" && isAuthenticated ? "pointer" : "not-allowed",
+                        whiteSpace: "nowrap",
+                        transition: "all 0.2s ease",
+                    }}
+                >
+                    🔍 Find Robot IP
+                </button>
+
                 {/* ── Emergency Kill Divider ── */}
                 {isAuthenticated && relay.agentStatus === "online" && (
                     <>
@@ -346,6 +397,47 @@ export default function TerminalPage() {
                     flexShrink: 0,
                 }}>
                     {killRosStatus.msg}
+                </div>
+            )}
+
+            {/* ── IP Discovered Popup ── */}
+            {ipPrompt && (
+                <div style={{
+                    position: "fixed", top: "80px", left: "50%", transform: "translateX(-50%)",
+                    background: "rgba(20, 15, 30, 0.95)", border: "1px solid rgba(0, 230, 118, 0.3)",
+                    padding: "16px 24px", borderRadius: "16px", zIndex: 9999,
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0, 230, 118, 0.1)",
+                    backdropFilter: "blur(10px)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px",
+                    animation: "slideUp 0.3s ease",
+                }}>
+                    <div style={{ fontSize: "0.9rem", color: "#e0e0e0" }}>
+                        Found Local IP: <strong style={{ color: "#00e676", fontSize: "1.1rem", fontFamily: "monospace" }}>{ipPrompt}</strong>
+                    </div>
+                    <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "4px" }}>
+                        Do you want to add this to your LAN settings?
+                    </div>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                        <button
+                            onClick={() => { setLanIp(ipPrompt); setIpPrompt(null); }}
+                            style={{
+                                padding: "6px 14px", borderRadius: "8px", border: "none",
+                                background: "linear-gradient(135deg, #00c6ff, #0072ff)", color: "#fff",
+                                fontSize: "0.8rem", fontWeight: 600, cursor: "pointer"
+                            }}
+                        >
+                            Add to Settings
+                        </button>
+                        <button
+                            onClick={() => setIpPrompt(null)}
+                            style={{
+                                padding: "6px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)",
+                                background: "transparent", color: "rgba(255,255,255,0.6)",
+                                fontSize: "0.8rem", fontWeight: 600, cursor: "pointer"
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             )}
 

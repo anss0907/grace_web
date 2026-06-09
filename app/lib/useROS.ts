@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as ROSLIB from "roslib";
 import { RELAY_URL, CLIENT_TOKEN } from "./relay-config";
+import { useLAN } from "../components/LANProvider";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
@@ -36,8 +37,9 @@ function getDefaultRosbridgeUrl() {
  * Hook to connect to a rosbridge WebSocket server.
  * Returns the ROS instance and connection status.
  */
-export function useROS(url?: string) {
-    const resolvedUrl = url ?? getDefaultRosbridgeUrl();
+export function useROS(customUrl?: string) {
+    const { isLanMode, lanIp } = useLAN();
+    const resolvedUrl = customUrl ?? (isLanMode && lanIp ? `ws://${lanIp}:9090` : getDefaultRosbridgeUrl());
     const rosRef = useRef<ROSLIB.Ros | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>("disconnected");
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
