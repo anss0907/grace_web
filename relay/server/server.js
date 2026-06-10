@@ -36,7 +36,7 @@ if (fs.existsSync(envPath)) {
 }
 
 /* ── Config ───────────────────────────────────────── */
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8082;
 const AGENT_TOKEN = process.env.AGENT_TOKEN;
 const CLIENT_TOKEN = process.env.CLIENT_TOKEN;
 const HEARTBEAT_INTERVAL = 30000; // 30s

@@ -149,6 +149,7 @@ export default function TerminalPage() {
     /* ── Preset buttons (hardcoded fallback + dynamic from agent) ── */
     const defaultPresets: Record<string, PresetInfo> = {
         simulation: { label: "🤖 Simulation", description: "Launch Gazebo + RViz simulation" },
+        jetson_camera_bringup: { label: "📸 Live Camera", description: "Launch real robot bringup with D435i camera" },
         rosbridge: { label: "🌉 Rosbridge", description: "Start rosbridge WebSocket server" },
         chatter_pub: { label: "📡 Chatter Pub", description: "Publish test messages to /chatter" },
         web_cmd_echo: { label: "👂 Web Cmd Echo", description: "Echo /web_cmd messages" },

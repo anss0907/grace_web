@@ -11,6 +11,11 @@ const presets = {
         description: "Launch Gazebo + RViz simulation",
         command: "source /opt/ros/humble/setup.bash && source ~/grace_ws/install/setup.bash && cd ~/grace_ws && clear && ros2 launch grace_bringup simulated_robot.launch.py",
     },
+    jetson_camera_bringup: {
+        label: "📸 Live Camera",
+        description: "Launch real robot bringup with D435i camera",
+        command: "source /opt/ros/humble/setup.bash && source ~/grace_ws/install/setup.bash && clear && ros2 launch grace_bringup grace.launch.py use_camera:=true",
+    },
     rosbridge: {
         label: "🌉 Rosbridge",
         description: "Start rosbridge WebSocket server for web communication",
