@@ -87,6 +87,7 @@ function makeNodes(visible: Record<string, boolean>, onToggle: (s: string) => vo
     { id: 'e2', type: 'leafNode', position: { x: 0,  y: 358 }, data: { label: 'PM 1.0 · PM 2.5 · PM 10',     color: C.env, side: Position.Right } },
     { id: 'e3', type: 'leafNode', position: { x: 0,  y: 406 }, data: { label: 'Gas Resistance (kΩ)',          color: C.env, side: Position.Right } },
     { id: 'e4', type: 'leafNode', position: { x: 0,  y: 454 }, data: { label: 'MQ Ratio · MHMQ Ratio',        color: C.env, side: Position.Right } },
+    { id: 'e5', type: 'leafNode', position: { x: 0,  y: 502 }, data: { label: 'STM32 Temp · Humidity · Pressure', color: C.env, side: Position.Right } },
     // Person branch (right)
     { id: 'person', type: 'branchNode', position: { x: 760, y: 230 }, data: { label: 'Person Vitals', emoji: '❤️', color: C.person, active: visible.person, onToggle: () => onToggle('person'), tgt: Position.Left, src: Position.Right } },
     { id: 'p1', type: 'leafNode', position: { x: 990, y: 140 }, data: { label: 'Heart Rate (BPM)',      color: C.person, side: Position.Left } },
@@ -109,6 +110,7 @@ const EDGES: ReturnType<typeof useEdgesState>[0] = [
   { id: 'e-e2', source: 'env',   sourceHandle: 'out', target: 'e2', style: EDGE_STYLE, type: 'smoothstep' },
   { id: 'e-e3', source: 'env',   sourceHandle: 'out', target: 'e3', style: EDGE_STYLE, type: 'smoothstep' },
   { id: 'e-e4', source: 'env',   sourceHandle: 'out', target: 'e4', style: EDGE_STYLE, type: 'smoothstep' },
+  { id: 'e-e5', source: 'env',   sourceHandle: 'out', target: 'e5', style: EDGE_STYLE, type: 'smoothstep' },
   { id: 'p-p1', source: 'person', sourceHandle: 'out', target: 'p1', style: EDGE_STYLE, type: 'smoothstep' },
   { id: 'p-p2', source: 'person', sourceHandle: 'out', target: 'p2', style: EDGE_STYLE, type: 'smoothstep' },
   { id: 'p-p3', source: 'person', sourceHandle: 'out', target: 'p3', style: EDGE_STYLE, type: 'smoothstep' },

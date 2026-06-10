@@ -85,6 +85,8 @@ export default function VizPage() {
   const [health, setHealth] = useState<any[]>([])
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nano, setNano]   = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [stm32, setStm32] = useState<any[]>([])
   const [live, setLive]   = useState(true)
   const [showMap, setShowMap] = useState(false)
   const [visible, setVisible] = useState({ robot: true, env: true, person: true })
@@ -93,14 +95,16 @@ export default function VizPage() {
 
   useEffect(() => {
     const fetch3 = async () => {
-      const [a, b, c] = await Promise.all([
+      const [a, b, c, d] = await Promise.all([
         supabase.from('esp32_data').select('*').order('ts', { ascending: false }).limit(80),
         supabase.from('health_vitals').select('*').order('ts', { ascending: false }).limit(80),
         supabase.from('arduino_nano_data').select('*').order('ts', { ascending: false }).limit(80),
+        supabase.from('stm32_data').select('*').order('ts', { ascending: false }).limit(80),
       ])
       if (a.data) setEsp(a.data.reverse())
       if (b.data) setHealth(b.data.reverse())
       if (c.data) setNano(c.data.reverse())
+      if (d.data) setStm32(d.data.reverse())
     }
     fetch3()
 
@@ -112,12 +116,14 @@ export default function VizPage() {
     const s1 = supabase.channel('esp_live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'esp32_data' }, push(setEsp)).subscribe()
     const s2 = supabase.channel('hlt_live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'health_vitals' }, push(setHealth)).subscribe()
     const s3 = supabase.channel('nan_live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'arduino_nano_data' }, push(setNano)).subscribe()
-    return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); supabase.removeChannel(s3) }
+    const s4 = supabase.channel('stm_live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stm32_data' }, push(setStm32)).subscribe()
+    return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); supabase.removeChannel(s3); supabase.removeChannel(s4) }
   }, [live])
 
   const le = esp[esp.length - 1] || {}
   const lh = health[health.length - 1] || {}
   const ln = nano[nano.length - 1] || {}
+  const ls = stm32[stm32.length - 1] || {}
 
   // merged robot + env datasets
   const robotData = esp.map((row, i) => ({ ...row, ...nano[i] }))
@@ -247,9 +253,12 @@ export default function VizPage() {
             </button>
           </div>
           <div style={kpiRow}>
-            <KPI accent="#f59e0b" label="Env Temp"   value={`${le.bme_temp_c?.toFixed(1) ?? '--'} °C`} />
-            <KPI accent="#06b6d4" label="Humidity"   value={`${le.bme_humidity_pct?.toFixed(1) ?? '--'} %`} />
-            <KPI accent="#eab308" label="Pressure"   value={`${le.bme_pressure_hpa?.toFixed(0) ?? '--'} hPa`} />
+            <KPI accent="#f59e0b" label="BME Temp"   value={`${le.bme_temp_c?.toFixed(1) ?? '--'} °C`} />
+            <KPI accent="#f59e0b" label="STM Temp"   value={`${ls.temp_c?.toFixed(1) ?? '--'} °C`} />
+            <KPI accent="#06b6d4" label="BME Hum"   value={`${le.bme_humidity_pct?.toFixed(1) ?? '--'} %`} />
+            <KPI accent="#06b6d4" label="STM Hum"   value={`${ls.humidity_pct?.toFixed(1) ?? '--'} %`} />
+            <KPI accent="#eab308" label="BME Press"   value={`${le.bme_pressure_hpa?.toFixed(0) ?? '--'} hPa`} />
+            <KPI accent="#eab308" label="STM Press"   value={`${ls.pressure_hpa?.toFixed(0) ?? '--'} hPa`} />
             <KPI accent="#ec4899" label="PM 2.5"     value={`${le.pm2_5 ?? '--'} µg/m³`} />
             <KPI accent="#22c55e" label="Gas (kΩ)"   value={`${le.bme_gas_kohm?.toFixed(1) ?? '--'} kΩ`} />
             <KPI accent="#84cc16" label="MQ Ratio"   value={`${ln.mq_ratio?.toFixed(3) ?? '--'}`} />
@@ -271,7 +280,7 @@ export default function VizPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </Chart>
-              <Chart title="🌬 Pressure (hPa)">
+              <Chart title="🌬 BME Pressure (hPa)">
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={esp}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GS} />
@@ -280,6 +289,32 @@ export default function VizPage() {
                     <Tooltip contentStyle={TT} labelFormatter={fmt} />
                     <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" dataKey="bme_pressure_hpa" name="Pressure" stroke="#eab308" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Chart>
+              <Chart title="🌡 STM32 Temp & Humidity">
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={stm32}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GS} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AX} />
+                    <YAxis yAxisId="l" {...AX} domain={['auto','auto']} />
+                    <YAxis yAxisId="r" orientation="right" {...AX} domain={['auto','auto']} />
+                    <Tooltip contentStyle={TT} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Line yAxisId="l" type="monotone" dataKey="temp_c"       name="Temp (°C)"  stroke="#f59e0b" dot={false} strokeWidth={2} />
+                    <Line yAxisId="r" type="monotone" dataKey="humidity_pct" name="Humidity (%)" stroke="#06b6d4" dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Chart>
+              <Chart title="🌬 STM32 Pressure (hPa)">
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={stm32}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GS} />
+                    <XAxis dataKey="ts" tickFormatter={fmt} {...AX} />
+                    <YAxis {...AX} domain={['auto','auto']} />
+                    <Tooltip contentStyle={TT} labelFormatter={fmt} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="pressure_hpa" name="Pressure" stroke="#eab308" dot={false} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </Chart>
