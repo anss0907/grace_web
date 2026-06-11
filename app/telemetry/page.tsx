@@ -1,104 +1,147 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useROS } from "../lib/useROS";
-import * as ROSLIB from "roslib";
+import { useState, useRef, useEffect } from "react";
 
-export default function TelemetryPage() {
-    const { ros, status } = useROS();
-    const [lastMessage, setLastMessage] = useState<string | null>(null);
-    const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
-    const [msgCount, setMsgCount] = useState(0);
-    const listenerRef = useRef<ROSLIB.Topic<unknown> | null>(null);
+interface ChatMessage {
+    id: string;
+    role: "user" | "grace";
+    text: string;
+    timestamp: Date;
+}
 
-    // Publisher state
-    const [publishInput, setPublishInput] = useState("");
-    const [publishCount, setPublishCount] = useState(0);
-    const [lastPublished, setLastPublished] = useState<string | null>(null);
-
-    // Speech state
+export default function TalkToGracePage() {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState("");
+    const [isThinking, setIsThinking] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [ttsEnabled, setTtsEnabled] = useState(true);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll chat container only (not the page)
     useEffect(() => {
-        if (!ros || status !== "connected") return;
+        const el = chatContainerRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+    }, [messages, isThinking]);
 
-        const topic = new ROSLIB.Topic({
-            ros,
-            name: "/chatter",
-            messageType: "std_msgs/msg/String",
-        });
+    // Initial greeting
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setMessages([
+                {
+                    id: "welcome",
+                    role: "grace",
+                    text: "Hello! I'm GRACE, your friendly nursing companion. 💜 How can I help you today?",
+                    timestamp: new Date(),
+                },
+            ]);
+        }, 600);
+        return () => clearTimeout(timer);
+    }, []);
 
-        topic.subscribe((message) => {
-            const data = (message as { data: string }).data;
-            setLastMessage(data);
-            setLastTimestamp(new Date().toLocaleTimeString());
-            setMsgCount((prev) => prev + 1);
-            
-            // Speak it if TTS is enabled
-            if (ttsEnabled) {
-                if ("speechSynthesis" in window) {
-                    // Only cancel if it's currently speaking a long message to avoid
-                    // halting the speech daemon and causing a 2-second cold start delay.
-                    if (window.speechSynthesis.speaking) {
-                        window.speechSynthesis.cancel();
-                    }
-                    
-                    const utterance = new SpeechSynthesisUtterance(data);
-                    
-                    // Grab voices quickly (if already loaded) without heavy filtering
-                    const voices = window.speechSynthesis.getVoices();
-                    if (voices.length > 0) {
-                        const bestVoice = voices.find(v => v.name.includes("Female") || v.name.includes("female") || v.lang === "en-GB");
-                        if (bestVoice) utterance.voice = bestVoice;
-                    }
-                    
-                    // Tweak for a friendlier, more natural vibe
-                    utterance.pitch = 1.2; 
-                    utterance.rate = 1.0; // Restored to normal speed to reduce processing lag
-                    
-                    window.speechSynthesis.speak(utterance);
-                }
-            }
-        });
+    function speakText(text: string) {
+        if (!ttsEnabled || !("speechSynthesis" in window)) return;
+        if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
 
-        listenerRef.current = topic;
-
-        return () => {
-            topic.unsubscribe();
-            listenerRef.current = null;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ros, status]);
-
-    function publishMessage(text: string) {
-        if (!ros || status !== "connected" || !text.trim()) return;
-
-        const topic = new ROSLIB.Topic({
-            ros,
-            name: "/web_cmd",
-            messageType: "std_msgs/msg/String",
-        });
-
-        topic.publish({ data: text.trim() });
-
-        setLastPublished(text.trim());
-        setPublishCount((prev) => prev + 1);
-        setPublishInput("");
+        // Strip emojis so TTS doesn't read them aloud ("smiling face with hearts")
+        const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            const bestVoice = voices.find(
+                (v) =>
+                    v.name.includes("Female") ||
+                    v.name.includes("female") ||
+                    v.lang === "en-GB"
+            );
+            if (bestVoice) utterance.voice = bestVoice;
+        }
+        utterance.pitch = 1.2;
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
     }
 
-    function handlePublish() {
-        publishMessage(publishInput);
+    async function sendMessage(text: string) {
+        if (!text.trim() || isThinking) return;
+
+        const userMsg: ChatMessage = {
+            id: `user-${Date.now()}`,
+            role: "user",
+            text: text.trim(),
+            timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, userMsg]);
+        setInput("");
+        setIsThinking(true);
+
+        try {
+            // Build message history for API
+            const apiMessages = [
+                ...messages
+                    .filter((m) => m.id !== "welcome")
+                    .map((m) => ({
+                        role: m.role === "user" ? "user" : "model",
+                        text: m.text,
+                    })),
+                { role: "user", text: text.trim() },
+            ];
+
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages: apiMessages }),
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            const graceMsg: ChatMessage = {
+                id: `grace-${Date.now()}`,
+                role: "grace",
+                text: data.reply,
+                timestamp: new Date(),
+            };
+
+            setMessages((prev) => [...prev, graceMsg]);
+            speakText(data.reply);
+        } catch (err) {
+            const errText = err instanceof Error ? err.message : "I'm having trouble connecting right now. Please try again! 🔧";
+            const errorMsg: ChatMessage = {
+                id: `error-${Date.now()}`,
+                role: "grace",
+                text: errText,
+                timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, errorMsg]);
+            console.error("Chat error:", err);
+        } finally {
+            setIsThinking(false);
+        }
     }
 
     function startSpeechToText() {
-        if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+        if (
+            !(
+                "webkitSpeechRecognition" in window ||
+                "SpeechRecognition" in window
+            )
+        ) {
             alert("Speech Recognition is not supported in this browser.");
             return;
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const SpeechRecognition =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).SpeechRecognition ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
 
         recognition.continuous = false;
@@ -110,8 +153,7 @@ export default function TelemetryPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
-            setPublishInput(transcript);
-            publishMessage(transcript); // Auto-publish once heard
+            sendMessage(transcript);
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,273 +163,427 @@ export default function TelemetryPage() {
         };
 
         recognition.onend = () => setIsListening(false);
-
         recognition.start();
     }
 
-    return (
-        <main className="page-container" style={{ minHeight: "100vh", paddingTop: "120px" }}>
-            <section className="content-section" style={{ maxWidth: "800px", margin: "0 auto" }}>
-                {/* Page header */}
-                <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-                    <h1 className="section-title gradient-text">Telemetry</h1>
-                    <p className="section-subtitle" style={{ opacity: 0.7 }}>
-                        Live ROS 2 message stream
-                    </p>
-                </div>
+    const formatTime = (date: Date) =>
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-                {/* Connection status */}
-                <div className="glass-card" style={{ padding: "1.5rem 2rem", marginBottom: "2rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+    return (
+        <>
+        <style dangerouslySetInnerHTML={{ __html: '.footer { display: none !important; }' }} />
+        <main
+            style={{
+                position: "fixed",
+                top: "80px",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                flexDirection: "column",
+                background:
+                    "linear-gradient(180deg, #0a0a12 0%, #0d0d1a 50%, #0a0f14 100%)",
+                overflow: "hidden",
+                zIndex: 10,
+            }}
+        >
+            {/* Header */}
+            <div
+                style={{
+                    textAlign: "center",
+                    padding: "1rem 1rem 0.5rem",
+                    flexShrink: 0,
+                }}
+            >
+                <div
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        marginBottom: "4px",
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "50%",
+                            background:
+                                "linear-gradient(135deg, #624ec7, #34d399)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "1.3rem",
+                            boxShadow: "0 0 30px rgba(98, 78, 199, 0.4)",
+                            animation: "avatarPulse 3s ease-in-out infinite",
+                        }}
+                    >
+                        🤖
+                    </div>
+                    <div>
+                        <h1
+                            style={{
+                                fontSize: "1.5rem",
+                                fontWeight: 800,
+                                background:
+                                    "linear-gradient(90deg, #a78bfa, #34d399)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                margin: 0,
+                                letterSpacing: "-0.5px",
+                            }}
+                        >
+                            Talk to GRACE
+                        </h1>
+                        <p
+                            style={{
+                                color: "#64748b",
+                                fontSize: "0.75rem",
+                                margin: 0,
+                            }}
+                        >
+                            Your AI-powered nursing companion
+                        </p>
+                    </div>
+                    {/* TTS Toggle inline */}
+                    <button
+                        onClick={() => setTtsEnabled(!ttsEnabled)}
+                        style={{
+                            padding: "4px 12px",
+                            borderRadius: "20px",
+                            border: `1px solid ${ttsEnabled ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.1)"}`,
+                            background: ttsEnabled
+                                ? "rgba(52,211,153,0.1)"
+                                : "transparent",
+                            color: ttsEnabled ? "#34d399" : "#64748b",
+                            fontSize: "0.7rem",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            fontWeight: 600,
+                            marginLeft: "8px",
+                        }}
+                    >
+                        {ttsEnabled ? "🔊 ON" : "🔇 OFF"}
+                    </button>
+                </div>
+            </div>
+
+            {/* Chat Area */}
+            <div
+                ref={chatContainerRef}
+                style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "0 1rem 1rem",
+                    maxWidth: "800px",
+                    width: "100%",
+                    margin: "0 auto",
+                    minHeight: 0,
+                }}
+            >
+                {messages.map((msg, i) => (
+                    <div
+                        key={msg.id}
+                        style={{
+                            display: "flex",
+                            justifyContent:
+                                msg.role === "user" ? "flex-end" : "flex-start",
+                            marginBottom: "12px",
+                            animation: `messageSlideIn 0.35s ease-out ${i === messages.length - 1 ? "0s" : "0s"} both`,
+                        }}
+                    >
+                        {/* Grace avatar */}
+                        {msg.role === "grace" && (
                             <div
                                 style={{
-                                    width: "12px",
-                                    height: "12px",
+                                    width: "36px",
+                                    height: "36px",
                                     borderRadius: "50%",
-                                    backgroundColor:
-                                        status === "connected"
-                                            ? "#00e676"
-                                            : status === "connecting"
-                                                ? "#ffab00"
-                                                : "#ff1744",
-                                    boxShadow:
-                                        status === "connected"
-                                            ? "0 0 12px #00e676"
-                                            : status === "connecting"
-                                                ? "0 0 12px #ffab00"
-                                                : "0 0 12px #ff1744",
-                                    transition: "all 0.3s ease",
+                                    background:
+                                        "linear-gradient(135deg, #624ec7, #34d399)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.95rem",
+                                    marginRight: "10px",
+                                    flexShrink: 0,
+                                    marginTop: "4px",
                                 }}
-                            />
-                            <span style={{ fontWeight: 600, fontSize: "1.05rem" }}>
-                                rosbridge
-                            </span>
-                        </div>
-                        <span
-                            style={{
-                                fontSize: "0.85rem",
-                                padding: "4px 14px",
-                                borderRadius: "20px",
-                                backgroundColor:
-                                    status === "connected"
-                                        ? "rgba(0, 230, 118, 0.15)"
-                                        : status === "connecting"
-                                            ? "rgba(255, 171, 0, 0.15)"
-                                            : "rgba(255, 23, 68, 0.15)",
-                                color:
-                                    status === "connected"
-                                        ? "#00e676"
-                                        : status === "connecting"
-                                            ? "#ffab00"
-                                            : "#ff1744",
-                                fontWeight: 500,
-                            }}
-                        >
-                            {status === "connected"
-                                ? "Connected"
-                                : status === "connecting"
-                                    ? "Connecting…"
-                                    : "Disconnected"}
-                        </span>
-                    </div>
-                    <div style={{ marginTop: "8px", fontSize: "0.8rem", opacity: 0.5 }}>
-                        ws://localhost:9090
-                    </div>
-                </div>
-
-                {/* ========== SUBSCRIBER SECTION ========== */}
-                <div className="glass-card" style={{ padding: "1.5rem 2rem", marginBottom: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem" }}>
-                            <span style={{ opacity: 0.5, fontWeight: 400 }}>⬇ Listening:</span>{" "}
-                            <code style={{
-                                color: "var(--primary)",
-                                backgroundColor: "rgba(98, 78, 199, 0.1)",
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                fontSize: "0.95rem",
-                            }}>
-                                /chatter
-                            </code>
-                        </h3>
-                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <button
-                                onClick={() => setTtsEnabled(!ttsEnabled)}
-                                style={{
-                                    padding: "4px 8px",
-                                    borderRadius: "8px",
-                                    border: `1px solid ${ttsEnabled ? "var(--primary)" : "rgba(98, 78, 199, 0.3)"}`,
-                                    background: ttsEnabled ? "rgba(98, 78, 199, 0.15)" : "transparent",
-                                    color: ttsEnabled ? "var(--primary)" : "var(--text-primary)",
-                                    fontSize: "0.8rem",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s ease"
-                                }}
-                                title="Toggle Text-to-Speech"
                             >
-                                {ttsEnabled ? "🔊 Auto-Speak ON" : "🔇 Auto-Speak OFF"}
-                            </button>
-                            <span style={{ fontSize: "0.8rem", opacity: 0.5 }}>
-                                {msgCount} received
-                            </span>
-                        </div>
-                    </div>
+                                🤖
+                            </div>
+                        )}
 
-                    {lastMessage !== null ? (
                         <div
                             style={{
-                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                fontSize: "1.4rem",
-                                fontWeight: 600,
-                                color: "var(--text-primary)",
-                                padding: "1rem",
-                                backgroundColor: "rgba(98, 78, 199, 0.06)",
-                                borderRadius: "12px",
-                                borderLeft: "3px solid var(--primary)",
-                                wordBreak: "break-word",
+                                maxWidth: "75%",
+                                padding: "12px 16px",
+                                borderRadius:
+                                    msg.role === "user"
+                                        ? "18px 18px 4px 18px"
+                                        : "18px 18px 18px 4px",
+                                background:
+                                    msg.role === "user"
+                                        ? "linear-gradient(135deg, #624ec7, #7c3aed)"
+                                        : "rgba(255,255,255,0.05)",
+                                border:
+                                    msg.role === "user"
+                                        ? "none"
+                                        : "1px solid rgba(255,255,255,0.08)",
+                                color:
+                                    msg.role === "user"
+                                        ? "#fff"
+                                        : "#e2e8f0",
+                                fontSize: "0.95rem",
+                                lineHeight: 1.6,
+                                boxShadow:
+                                    msg.role === "user"
+                                        ? "0 4px 20px rgba(98, 78, 199, 0.3)"
+                                        : "0 2px 10px rgba(0,0,0,0.2)",
                             }}
                         >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span>{lastMessage}</span>
-                                {lastTimestamp && (
-                                    <span style={{ fontSize: "0.7rem", opacity: 0.35, fontWeight: 400 }}>
-                                        {lastTimestamp}
-                                    </span>
-                                )}
+                            <div>{msg.text}</div>
+                            <div
+                                style={{
+                                    fontSize: "0.65rem",
+                                    opacity: 0.4,
+                                    marginTop: "6px",
+                                    textAlign:
+                                        msg.role === "user"
+                                            ? "right"
+                                            : "left",
+                                }}
+                            >
+                                {formatTime(msg.timestamp)}
                             </div>
                         </div>
-                    ) : (
-                        <div style={{ textAlign: "center", padding: "1.5rem", opacity: 0.3, fontSize: "0.9rem" }}>
-                            {status === "connected"
-                                ? "Waiting for messages on /chatter…"
-                                : "Connect to rosbridge to receive messages"}
-                        </div>
-                    )}
-                </div>
-
-                {/* ========== PUBLISHER SECTION ========== */}
-                <div className="glass-card" style={{ padding: "1.5rem 2rem", marginBottom: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem" }}>
-                            <span style={{ opacity: 0.5, fontWeight: 400 }}>⬆ Publishing:</span>{" "}
-                            <code style={{
-                                color: "#00e676",
-                                backgroundColor: "rgba(0, 230, 118, 0.1)",
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                fontSize: "0.95rem",
-                            }}>
-                                /web_cmd
-                            </code>
-                        </h3>
-                        <span style={{ fontSize: "0.8rem", opacity: 0.5 }}>
-                            {publishCount} sent
-                        </span>
                     </div>
+                ))}
 
-                    <div style={{ display: "flex", gap: "10px", marginBottom: lastPublished ? "12px" : 0 }}>
-                        <input
-                            type="text"
-                            value={publishInput}
-                            onChange={(e) => setPublishInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handlePublish()}
-                            placeholder={status === "connected" ? "Type a message to publish…" : "Connect to rosbridge first"}
-                            disabled={status !== "connected"}
+                {/* Typing indicator */}
+                {isThinking && (
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            marginBottom: "12px",
+                            animation: "messageSlideIn 0.35s ease-out both",
+                        }}
+                    >
+                        <div
                             style={{
-                                flex: 1,
-                                padding: "12px 16px",
-                                borderRadius: "12px",
-                                border: "1px solid rgba(98, 78, 199, 0.2)",
-                                backgroundColor: "rgba(255, 255, 255, 0.03)",
-                                color: "var(--text-primary)",
-                                fontSize: "0.95rem",
-                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                            }}
-                            onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                            onBlur={(e) => (e.target.style.borderColor = "rgba(98, 78, 199, 0.2)")}
-                        />
-                        <button
-                            onClick={startSpeechToText}
-                            disabled={status !== "connected" || isListening}
-                            style={{
-                                padding: "12px",
-                                borderRadius: "12px",
-                                border: "none",
-                                background: isListening ? "#ff1744" : "rgba(98, 78, 199, 0.15)",
-                                color: isListening ? "#fff" : "var(--primary)",
-                                cursor: status === "connected" ? "pointer" : "not-allowed",
-                                transition: "all 0.2s ease",
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "50%",
+                                background:
+                                    "linear-gradient(135deg, #624ec7, #34d399)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                fontSize: "1.2rem",
-                                animation: isListening ? "pulseGlow 1.5s infinite" : "none"
-                            }}
-                            title="Speak to publish"
-                        >
-                            {isListening ? "🎙️" : "🎤"}
-                        </button>
-                        <button
-                            onClick={handlePublish}
-                            disabled={status !== "connected" || !publishInput.trim()}
-                            style={{
-                                padding: "12px 24px",
-                                borderRadius: "12px",
-                                border: "none",
-                                background: status === "connected" && publishInput.trim()
-                                    ? "linear-gradient(135deg, var(--primary), var(--secondary))"
-                                    : "rgba(98, 78, 199, 0.15)",
-                                color: status === "connected" && publishInput.trim()
-                                    ? "#fff"
-                                    : "rgba(255,255,255,0.3)",
-                                fontSize: "0.9rem",
-                                fontWeight: 600,
-                                cursor: status === "connected" && publishInput.trim() ? "pointer" : "not-allowed",
-                                transition: "all 0.2s ease",
-                                whiteSpace: "nowrap",
+                                fontSize: "0.95rem",
+                                flexShrink: 0,
                             }}
                         >
-                            Send →
-                        </button>
-                    </div>
-
-                    {lastPublished && (
-                        <div style={{
-                            fontSize: "0.8rem",
-                            opacity: 0.4,
-                            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                        }}>
-                            Last sent: &quot;{lastPublished}&quot;
+                            🤖
                         </div>
-                    )}
-                </div>
+                        <div
+                            style={{
+                                padding: "14px 20px",
+                                borderRadius: "18px 18px 18px 4px",
+                                background: "rgba(255,255,255,0.05)",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                display: "flex",
+                                gap: "6px",
+                                alignItems: "center",
+                            }}
+                        >
+                            <span className="typing-dot" style={{ animationDelay: "0s" }} />
+                            <span className="typing-dot" style={{ animationDelay: "0.15s" }} />
+                            <span className="typing-dot" style={{ animationDelay: "0.3s" }} />
+                        </div>
+                    </div>
+                )}
 
-                {/* Instructions */}
-                <div style={{
-                    marginTop: "2rem",
-                    padding: "1.5rem 2rem",
-                    borderRadius: "16px",
-                    backgroundColor: "rgba(98, 78, 199, 0.05)",
-                    border: "1px solid rgba(98, 78, 199, 0.1)",
-                    fontSize: "0.8rem",
-                    opacity: 0.6,
-                    lineHeight: 1.8,
-                }}>
-                    <strong style={{ opacity: 1 }}>Quick Start:</strong>
-                    <br />
-                    <code>ros2 launch rosbridge_server rosbridge_websocket_launch.xml</code>
-                    <br />
-                    <span style={{ opacity: 0.7 }}>Subscribe (CLI → Web):</span>{" "}
-                    <code>ros2 topic pub /chatter std_msgs/msg/String &quot;data: hello&quot; --rate 1</code>
-                    <br />
-                    <span style={{ opacity: 0.7 }}>Publish (Web → CLI):</span>{" "}
-                    <code>ros2 topic echo /web_cmd</code>
+                <div ref={chatEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div
+                style={{
+                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    background: "rgba(10, 10, 18, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    padding: "16px",
+                    flexShrink: 0,
+                }}
+            >
+                <div
+                    style={{
+                        maxWidth: "800px",
+                        margin: "0 auto",
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "center",
+                    }}
+                >
+                    <button
+                        onClick={startSpeechToText}
+                        disabled={isListening || isThinking}
+                        style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "50%",
+                            border: "none",
+                            background: isListening
+                                ? "linear-gradient(135deg, #ef4444, #f97316)"
+                                : "rgba(98, 78, 199, 0.15)",
+                            color: isListening ? "#fff" : "#a78bfa",
+                            cursor:
+                                isListening || isThinking
+                                    ? "not-allowed"
+                                    : "pointer",
+                            transition: "all 0.2s ease",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "1.3rem",
+                            flexShrink: 0,
+                            animation: isListening
+                                ? "pulseGlow 1.5s infinite"
+                                : "none",
+                        }}
+                        title="Speak to GRACE"
+                    >
+                        {isListening ? "🎙️" : "🎤"}
+                    </button>
+
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && sendMessage(input)
+                        }
+                        placeholder={
+                            isThinking
+                                ? "GRACE is thinking..."
+                                : "Say something to GRACE..."
+                        }
+                        disabled={isThinking}
+                        style={{
+                            flex: 1,
+                            padding: "14px 20px",
+                            borderRadius: "24px",
+                            border: "1px solid rgba(98, 78, 199, 0.2)",
+                            backgroundColor: "rgba(255, 255, 255, 0.04)",
+                            color: "#e2e8f0",
+                            fontSize: "0.95rem",
+                            outline: "none",
+                            transition: "all 0.2s ease",
+                            fontFamily: "inherit",
+                        }}
+                        onFocus={(e) =>
+                        (e.target.style.borderColor =
+                            "rgba(98, 78, 199, 0.5)")
+                        }
+                        onBlur={(e) =>
+                        (e.target.style.borderColor =
+                            "rgba(98, 78, 199, 0.2)")
+                        }
+                    />
+
+                    <button
+                        onClick={() => sendMessage(input)}
+                        disabled={!input.trim() || isThinking}
+                        style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "50%",
+                            border: "none",
+                            background:
+                                input.trim() && !isThinking
+                                    ? "linear-gradient(135deg, #624ec7, #34d399)"
+                                    : "rgba(98, 78, 199, 0.15)",
+                            color:
+                                input.trim() && !isThinking
+                                    ? "#fff"
+                                    : "rgba(255,255,255,0.2)",
+                            cursor:
+                                input.trim() && !isThinking
+                                    ? "pointer"
+                                    : "not-allowed",
+                            transition: "all 0.2s ease",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "1.3rem",
+                            flexShrink: 0,
+                            boxShadow:
+                                input.trim() && !isThinking
+                                    ? "0 4px 20px rgba(98, 78, 199, 0.4)"
+                                    : "none",
+                        }}
+                        title="Send message"
+                    >
+                        ➤
+                    </button>
                 </div>
-            </section>
+            </div>
+
+            {/* Animations */}
+            <style jsx>{`
+                @keyframes messageSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(12px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                @keyframes avatarPulse {
+                    0%,
+                    100% {
+                        box-shadow: 0 0 20px rgba(98, 78, 199, 0.3);
+                    }
+                    50% {
+                        box-shadow: 0 0 40px rgba(52, 211, 153, 0.5);
+                    }
+                }
+                @keyframes pulseGlow {
+                    0%,
+                    100% {
+                        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+                    }
+                    50% {
+                        box-shadow: 0 0 24px rgba(239, 68, 68, 0.8);
+                    }
+                }
+                .typing-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #a78bfa;
+                    animation: typingBounce 1.2s ease-in-out infinite;
+                    display: inline-block;
+                }
+                @keyframes typingBounce {
+                    0%,
+                    60%,
+                    100% {
+                        transform: translateY(0);
+                        opacity: 0.4;
+                    }
+                    30% {
+                        transform: translateY(-8px);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </main>
+        </>
     );
 }
-

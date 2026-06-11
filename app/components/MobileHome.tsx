@@ -15,8 +15,8 @@ export default function MobileHome() {
         <p className="hero-subtitle">
           <strong>G</strong>eriatric <strong>R</strong>obotic{" "}
           <strong>A</strong>ssistance for <strong>C</strong>are and{" "}
-          <strong>E</strong>ngagement — a mobile, non-physical companion robot
-          focused on intelligent monitoring, interaction, and emotional support
+          <strong>E</strong>ngagement is a mobile robot focused on
+          intelligent monitoring, daily reminders, and dedicated care
           for elderly users.
         </p>
         <p className="hero-tagline">
@@ -65,9 +65,8 @@ export default function MobileHome() {
               />
               <h3>Meet GRACE</h3>
               <p>
-                A friendly, non-threatening companion designed specifically for
-                elderly care. GRACE doesn&apos;t have arms or lift anything — she&apos;s
-                pure cognitive and emotional assistive technology.
+                A friendly companion designed specifically for
+                elderly care. GRACE doesn&apos;t have arms or lift anything; instead, she relies on advanced perception and AI to keep seniors safe, engaged, and independent at home.
               </p>
             </div>
           </div>
@@ -156,9 +155,7 @@ export default function MobileHome() {
                 reminders, and daily routines.
               </p>
               <p>
-                She sends caretaker alerts when something seems off, and can even
-                handle voice-controlled social media interaction for the elderly
-                who may struggle with technology.
+                She instantly sends caretaker alerts when anomalies or emergencies are detected, bridging the gap between elderly independence and continuous remote monitoring.
               </p>
             </div>
           </div>
@@ -220,7 +217,7 @@ export default function MobileHome() {
         <section className="section">
           <div className="section-header">
             <div className="section-label">Perception</div>
-            <h2 className="section-title">She Sees Everything</h2>
+            <h2 className="section-title">Advanced Visual Perception</h2>
             <div className="divider"></div>
             <p className="section-desc">
               A multi-sensor perception stack that maps, scans, follows, and
@@ -311,16 +308,16 @@ export default function MobileHome() {
               <div className="card-icon">🗣️</div>
               <h3 className="card-title">Verbal Interaction</h3>
               <p className="card-text">
-                Daily reminders, exercise suggestions, medication prompts, and
-                voice-controlled social media access for the elderly.
+                Daily reminders, exercise suggestions, and medication prompts
+                for the elderly.
               </p>
             </div>
             <div className="card">
               <div className="card-icon">🚨</div>
               <h3 className="card-title">Caretaker Alerts</h3>
               <p className="card-text">
-                When anomalies are detected — abnormal vitals, falls, or distress
-                — GRACE notifies the remote caretaker instantly.
+                When anomalies such as abnormal vitals, falls, or distress
+                are detected, GRACE instantly notifies the remote caretaker.
               </p>
             </div>
           </div>
@@ -345,32 +342,28 @@ export default function MobileHome() {
               <div className="card-icon">🔋</div>
               <h3 className="card-title">Robot Health</h3>
               <p className="card-text">
-                Battery voltage &amp; current sensors, charging current, 3 IMUs,
-                internal temperature, pressure, and humidity monitoring.
+                Hoverboard 40V &amp; 24V battery systems, discharge and charging currents, ESP32 board temperature, and core telemetry.
               </p>
             </div>
             <div className="card">
               <div className="card-icon">⌚</div>
-              <h3 className="card-title">Human Health</h3>
+              <h3 className="card-title">Person Vitals</h3>
               <p className="card-text">
-                Smart wristband integration for SpO2, heart rate, and lifestyle
-                metrics — non-invasive vital sign tracking.
+                Smart wristband integration tracking heart rate, SpO2, systolic/diastolic blood pressure, daily steps, and calories.
               </p>
             </div>
             <div className="card">
               <div className="card-icon">🌡️</div>
               <h3 className="card-title">Environment</h3>
               <p className="card-text">
-                Temperature, humidity, pressure, CO₂, CO levels, and PMS5003
-                particulate matter (PM2.5/PM10) sensing.
+                BME680 &amp; STM32 sensors monitoring temperature, humidity, pressure, air quality (PM 1.0/2.5/10), and gas resistance (MQ).
               </p>
             </div>
             <div className="card">
               <div className="card-icon">🧠</div>
               <h3 className="card-title">AI Perception</h3>
               <p className="card-text">
-                Pose detection, human following, context awareness, and potential
-                thermal-based anomaly detection streams.
+                Pose detection, human following, context awareness, and advanced spatial mapping using RealSense and RPLidar.
               </p>
             </div>
           </div>

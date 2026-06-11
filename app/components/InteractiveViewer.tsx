@@ -9,17 +9,18 @@ import * as THREE from "three";
 // URDF-derived transforms for hardware base
 // ============================================================
 const URDF_PARTS = [
-    { name: "base_link", file: "/models/base_link.glb", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#624ec7" },
-    { name: "wheel_right", file: "/models/wheel_right_link.glb", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
-    { name: "wheel_left", file: "/models/wheel_left_link.glb", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
-    { name: "caster_bl", file: "/models/caster_back_left_link.glb", position: [-0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
-    { name: "caster_br", file: "/models/caster_back_right_link.glb", position: [-0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
-    { name: "caster_fl", file: "/models/caster_front_left_link.glb", position: [0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
-    { name: "caster_fr", file: "/models/caster_front_right_link.glb", position: [0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
-    { name: "imu_main", file: "/models/imu_link.glb", position: [-0.0105, -0.042038, 0.094] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#E91E63" },
-    { name: "imu_back", file: "/models/imu_back_link.glb", position: [-0.1932, 0, 0.031] as [number, number, number], rotation: [0, Math.PI / 2, 0] as [number, number, number], color: "#E91E63" },
-    { name: "imu_front", file: "/models/imu_front_link.glb", position: [0.1932, 0, 0.031] as [number, number, number], rotation: [Math.PI, Math.PI / 2, 0] as [number, number, number], color: "#E91E63" },
-    { name: "laser", file: "/models/laser_link.glb", position: [0, 0, 0.2321] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#333344" },
+    { name: "base_link", file: "/models/base_link.glb?v=2", position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#624ec7" },
+    { name: "wheel_right", file: "/models/wheel_right_link.glb?v=2", position: [0.0005, -0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
+    { name: "wheel_left", file: "/models/wheel_left_link.glb?v=2", position: [-0.0005, 0.22734, 0.038] as [number, number, number], rotation: [-Math.PI / 2, 0, 0] as [number, number, number], color: "#1a1a1a" },
+    { name: "caster_bl", file: "/models/caster_back_left_link.glb?v=2", position: [-0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
+    { name: "caster_br", file: "/models/caster_back_right_link.glb?v=2", position: [-0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
+    { name: "caster_fl", file: "/models/caster_front_left_link.glb?v=2", position: [0.14848, 0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
+    { name: "caster_fr", file: "/models/caster_front_right_link.glb?v=2", position: [0.14848, -0.085725, 0.0005] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#B76E79" },
+    { name: "imu_main", file: "/models/imu_link.glb?v=2", position: [-0.0105, -0.042038, 0.094] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#E91E63" },
+    { name: "imu_back", file: "/models/imu_back_link.glb?v=2", position: [-0.1932, 0, 0.031] as [number, number, number], rotation: [0, Math.PI / 2, 0] as [number, number, number], color: "#E91E63" },
+    { name: "imu_front", file: "/models/imu_front_link.glb?v=2", position: [0.1932, 0, 0.031] as [number, number, number], rotation: [Math.PI, Math.PI / 2, 0] as [number, number, number], color: "#E91E63" },
+    { name: "laser", file: "/models/laser_link.glb?v=2", position: [0, 0, 0.2321] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#333344" },
+    { name: "camera", file: "/models/Camera_Link.glb?v=2", position: [-0.19268, 0.030962, 0.2792] as [number, number, number], rotation: [0, 0, 0] as [number, number, number], color: "#b0c4de" },
 ];
 
 // ============================================================
@@ -45,7 +46,7 @@ function GLBPart({ file, position, rotation, color }: {
 // Full body single-STL model
 // ============================================================
 function FullBodyModel() {
-    const { scene } = useGLTF("/models/grace-full-body.glb");
+    const { scene } = useGLTF("/models/grace-full-body.glb?v=2");
     const geometry = (scene.children[0] as THREE.Mesh)?.geometry;
 
     useEffect(() => {

@@ -8,7 +8,7 @@ const NAV_LINKS = [
     { href: "/", label: "Home" },
     { href: "/hardware", label: "Hardware" },
     { href: "/viewer", label: "3D Viewer" },
-    { href: "/telemetry", label: "Telemetry" },
+    { href: "/telemetry", label: "Talk to GRACE" },
     { href: "/teleop", label: "Teleop" },
     { href: "/map", label: "Map" },
     { href: "/dashboard", label: "Dashboard" },

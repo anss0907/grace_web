@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "GRACE — Digital Nurse Robot",
   description:
-    "Geriatric Robotic Assistance for Care and Engagement. A mobile companion robot for intelligent monitoring, interaction, and emotional support for elderly users.",
+    "Geriatric Robotic Assistance for Care and Engagement. A mobile robot for intelligent monitoring, daily reminders, and dedicated care for elderly users.",
   keywords: ["GRACE", "robot", "ROS 2", "nurse", "elderly care", "Jetson"],
 };
 
@@ -52,7 +52,7 @@ export default function RootLayout({
               <Link href="/viewer">3D Viewer</Link>
             </li>
             <li>
-              <Link href="/telemetry">Telemetry</Link>
+              <Link href="/telemetry">Talk to GRACE</Link>
             </li>
             <li>
               <Link href="/teleop">Teleop</Link>
@@ -88,9 +88,9 @@ export default function RootLayout({
             <div className="footer-brand">
               <h3>GRACE</h3>
               <p>
-                Geriatric Robotic Assistance for Care and Engagement — a mobile,
-                non-physical companion robot focused on intelligent monitoring,
-                interaction, and emotional support for elderly users.
+                An innovative robotics project redefining elderly care through
+                non-invasive monitoring, proactive reminders, and autonomous
+                assistance.
               </p>
             </div>
 
@@ -107,7 +107,7 @@ export default function RootLayout({
                   <Link href="/viewer">3D Viewer</Link>
                 </li>
                 <li>
-                  <Link href="/telemetry">Telemetry</Link>
+                  <Link href="/telemetry">Talk to GRACE</Link>
                 </li>
                 <li>
                   <Link href="/teleop">Teleop</Link>
